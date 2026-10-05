@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { PusherService } from '../services/pusher.service';
+import { OrderService } from '../services/order.service';
 import { ToastrService } from 'ngx-toastr';
 import { Subscription } from 'rxjs';
 
@@ -15,6 +16,7 @@ import { Subscription } from 'rxjs';
 export class LayoutComponent implements OnInit, OnDestroy {
   public readonly authService = inject(AuthService);
   private readonly pusherService = inject(PusherService);
+  private readonly orderService = inject(OrderService);
   private readonly toastService = inject(ToastrService);
   private readonly router = inject(Router);
   
@@ -25,11 +27,15 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   readonly isSidebarOpen = signal(false);
   notifications = signal<any[]>([]);
+  activeTablesCount = signal<number>(0);
 
   ngOnInit() {
+    this.loadActiveTables();
+
     // Escuchar notificaciones de nuevos pedidos vía Pusher
     this.pusherSubscription = this.pusherService.orderNotifications$.subscribe(data => {
       this.handleNewOrder(data);
+      this.loadActiveTables();
     });
   }
 
@@ -39,10 +45,26 @@ export class LayoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  loadActiveTables() {
+    this.orderService.getOrders().subscribe({
+      next: (orders) => {
+        const count = orders.filter(o => 
+          Boolean(o.tableNumber && o.tableNumber.trim().length > 0) &&
+          o.paymentStatus !== 'Approved' &&
+          o.status !== 'Cancelled'
+        ).length;
+        this.activeTablesCount.set(count);
+      },
+      error: () => {}
+    });
+  }
+
   private handleNewOrder(data: any) {
-    // Mostrar Toast informativo para el administrador/staff
+    const orderId = data.id || data.orderId || '';
+    const tableInfo = data.tableNumber ? ` (Mesa ${data.tableNumber})` : '';
+
     this.toastService.info(
-      `Nuevo pedido #${data.orderId || ''} recibido`, 
+      `Nuevo pedido #${orderId}${tableInfo} recibido`, 
       '¡ALERTA DE PEDIDO!',
       { 
         timeOut: 10000, 
@@ -55,7 +77,6 @@ export class LayoutComponent implements OnInit, OnDestroy {
     // Añadir a la lista local de notificaciones
     this.notifications.update(prev => [data, ...prev].slice(0, 5));
     
-    // Opcional: Reproducir un sonido de notificación
     try {
       const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
       audio.play().catch(() => {});

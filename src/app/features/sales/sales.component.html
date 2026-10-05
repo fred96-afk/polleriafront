@@ -1,157 +1,919 @@
 <div class="h-full flex flex-col gap-4 sm:gap-6 relative">
-  <!-- Mobile Header -->
-  <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 gap-3">
-    <div>
-      <h1 class="text-xl sm:text-2xl font-black text-gray-800 tracking-tighter uppercase">Punto de Venta</h1>
-      <p class="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Atención en Mostrador</p>
-    </div>
-    <div class="flex items-center w-full sm:w-auto justify-between sm:justify-end gap-3">
-      <div class="flex flex-col items-end">
-        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Personal</span>
-        <span class="text-xs sm:text-sm font-black text-gray-800">{{ cashierName() }}</span>
+  <!-- POS Header & Navigation Bar -->
+  <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-orange-600 text-white flex items-center justify-center shadow-md shadow-orange-200">
+        <span class="material-icons-outlined text-2xl">point_of_sale</span>
       </div>
-      <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 border-2 border-orange-200">
-        <span class="material-icons-outlined text-xl">person</span>
+      <div>
+        <h1 class="text-xl sm:text-2xl font-black text-gray-800 tracking-tighter uppercase">Punto de Venta</h1>
+        <p class="text-[10px] font-bold text-orange-600 uppercase tracking-widest flex items-center gap-1">
+          <span>Atención Mostrador & Salón</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Center Navigation Tabs: Catálogo / Mostrador vs Mesas con Pedidos -->
+    <div class="flex items-center bg-gray-100 p-1.5 rounded-2xl w-full lg:w-auto justify-between lg:justify-start gap-1">
+      <button 
+        type="button"
+        (click)="setActiveTab('pos')"
+        [class.bg-white]="activeTab() === 'pos'"
+        [class.text-orange-600]="activeTab() === 'pos'"
+        [class.shadow-sm]="activeTab() === 'pos'"
+        [class.text-gray-500]="activeTab() !== 'pos'"
+        class="flex-1 lg:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all active:scale-95"
+      >
+        <span class="material-icons-outlined text-lg">restaurant_menu</span>
+        <span>Catálogo / Venta</span>
+      </button>
+
+      <button 
+        type="button"
+        (click)="setActiveTab('tables')"
+        [class.bg-white]="activeTab() === 'tables'"
+        [class.text-orange-600]="activeTab() === 'tables'"
+        [class.shadow-sm]="activeTab() === 'tables'"
+        [class.text-gray-500]="activeTab() !== 'tables'"
+        class="flex-1 lg:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all active:scale-95 relative"
+      >
+        <span class="material-icons-outlined text-lg">table_restaurant</span>
+        <span>Mesas con Pedidos</span>
+        @if (activeTablesCount() > 0) {
+          <span class="bg-orange-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+            {{ activeTablesCount() }}
+          </span>
+        }
+      </button>
+    </div>
+
+    <!-- Right Actions & Cashier Profile -->
+    <div class="flex items-center w-full lg:w-auto justify-between lg:justify-end gap-3">
+      <!-- Quick Mesas Drawer Toggle Button -->
+      <button 
+        type="button"
+        (click)="toggleTablesMenu()"
+        class="relative flex items-center gap-2 px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl font-bold text-xs transition-colors border border-orange-200 active:scale-95"
+        title="Ver menú rápido de mesas con pedidos"
+      >
+        <span class="material-icons-outlined text-lg">view_sidebar</span>
+        <span class="hidden sm:inline">Menú Mesas</span>
+        @if (activeTablesCount() > 0) {
+          <span class="w-2.5 h-2.5 rounded-full bg-orange-600 animate-ping absolute -top-1 -right-1"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-orange-600 absolute -top-1 -right-1"></span>
+        }
+      </button>
+
+      <!-- Reload button -->
+      <button 
+        type="button"
+        (click)="loadOrders()"
+        [disabled]="loadingTables()"
+        class="w-10 h-10 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 flex items-center justify-center transition-colors active:scale-95"
+        title="Actualizar información"
+      >
+        <span class="material-icons-outlined text-lg" [class.animate-spin]="loadingTables()">refresh</span>
+      </button>
+
+      <!-- Cashier Info -->
+      <div class="flex items-center gap-2 pl-2 border-l border-gray-100">
+        <div class="flex flex-col items-end">
+          <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Cajero(a)</span>
+          <span class="text-xs sm:text-sm font-black text-gray-800">{{ cashierName() }}</span>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 border-2 border-orange-200">
+          <span class="material-icons-outlined text-xl">person</span>
+        </div>
       </div>
     </div>
   </header>
 
-  <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
-    <!-- Product Grid Section -->
-    <div class="flex-1 space-y-4 overflow-y-auto pr-1">
-      <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-        @if (loadingProducts()) {
-          @for (i of [1,2,3,4,5,6,7,8]; track i) {
-            <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-50 animate-pulse">
-              <div class="aspect-square bg-gray-200 rounded-xl mb-3"></div>
-              <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+  <!-- ========================================== -->
+  <!-- VIEW 1: VISTA DE MESAS CON PEDIDOS         -->
+  <!-- ========================================== -->
+  @if (activeTab() === 'tables') {
+    <div class="flex-1 flex flex-col gap-4 overflow-y-auto">
+      <!-- Top Overview Stats & Filters Bar -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+        <!-- Stats Badges -->
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2 bg-orange-50 border border-orange-100 px-3.5 py-2 rounded-xl">
+            <span class="material-icons-outlined text-orange-600 text-xl">table_restaurant</span>
+            <div>
+              <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Mesas Ocupadas</span>
+              <span class="text-sm font-black text-orange-700">{{ activeTablesCount() }} con pedidos</span>
             </div>
-          }
-        } @else {
-          @for (product of products(); track product.id) {
+          </div>
+
+          <div class="flex items-center gap-2 bg-green-50 border border-green-100 px-3.5 py-2 rounded-xl">
+            <span class="material-icons-outlined text-green-600 text-xl">payments</span>
+            <div>
+              <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Total por Cobrar</span>
+              <span class="text-sm font-black text-green-700">S/ {{ totalPendingAmountInTables().toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Mode & Search -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <!-- View Mode: Solo con pedidos vs Plano completo -->
+          <div class="bg-gray-100 p-1 rounded-xl flex">
             <button 
-              (click)="addToCart(product)"
-              class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border-2 border-transparent hover:border-orange-500 hover:shadow-xl hover:-translate-y-1 transition-all text-left group flex flex-col h-full active:scale-95"
+              type="button"
+              (click)="tablesViewMode.set('orders_only')"
+              [class.bg-white]="tablesViewMode() === 'orders_only'"
+              [class.shadow-sm]="tablesViewMode() === 'orders_only'"
+              [class.text-orange-600]="tablesViewMode() === 'orders_only'"
+              [class.text-gray-500]="tablesViewMode() !== 'orders_only'"
+              class="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all"
             >
-              <div class="aspect-square bg-gray-50 rounded-xl mb-3 flex items-center justify-center overflow-hidden border border-gray-100 relative">
-                 @if (product.imageUrl) {
-                   <img [src]="product.imageUrl" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                 } @else {
-                   <span class="material-icons-outlined text-4xl text-gray-200">restaurant</span>
-                 }
-                 <div class="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm border border-gray-100">
-                    <span class="text-xs font-black text-orange-600">S/ {{ product.basePrice.toFixed(2) }}</span>
-                 </div>
+              Con Pedidos ({{ activeTablesCount() }})
+            </button>
+            <button 
+              type="button"
+              (click)="tablesViewMode.set('all_tables')"
+              [class.bg-white]="tablesViewMode() === 'all_tables'"
+              [class.shadow-sm]="tablesViewMode() === 'all_tables'"
+              [class.text-orange-600]="tablesViewMode() === 'all_tables'"
+              [class.text-gray-500]="tablesViewMode() !== 'all_tables'"
+              class="px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all"
+            >
+              Todas las Mesas
+            </button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative flex items-center">
+            <span class="material-icons-outlined absolute left-3 text-gray-400 text-lg">search</span>
+            <input 
+              type="text"
+              [ngModel]="tableSearchQuery()"
+              (ngModelChange)="tableSearchQuery.set($event)"
+              placeholder="Buscar mesa o cliente..."
+              class="w-full sm:w-56 pl-9 pr-3 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-orange-500 outline-none text-xs font-bold text-gray-800 transition-colors"
+            >
+            @if (tableSearchQuery()) {
+              <button (click)="tableSearchQuery.set('')" class="absolute right-2.5 text-gray-400 hover:text-gray-600">
+                <span class="material-icons-outlined text-sm">clear</span>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode A: Tarjetas de Mesas con Pedidos Activos -->
+      @if (tablesViewMode() === 'orders_only') {
+        @if (loadingTables()) {
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            @for (i of [1,2,3,4,5,6]; track i) {
+              <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 animate-pulse space-y-4">
+                <div class="flex justify-between items-center">
+                  <div class="h-6 bg-gray-200 rounded w-24"></div>
+                  <div class="h-5 bg-gray-200 rounded w-16"></div>
+                </div>
+                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div class="space-y-2 py-2">
+                  <div class="h-3 bg-gray-100 rounded w-full"></div>
+                  <div class="h-3 bg-gray-100 rounded w-5/6"></div>
+                </div>
+                <div class="h-10 bg-gray-200 rounded-xl"></div>
               </div>
-              <div class="flex-1">
-                <h3 class="font-black text-gray-800 text-xs sm:text-sm leading-tight uppercase line-clamp-2 mb-1 group-hover:text-orange-600 transition-colors">
-                  {{ product.name }}
-                </h3>
-                <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2 italic">
-                  {{ product.categoryName || 'General' }}
+            }
+          </div>
+        } @else if (filteredTableOrders().length === 0) {
+          <!-- Empty State -->
+          <div class="bg-white p-12 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center justify-center text-center my-auto">
+            <div class="w-24 h-24 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mb-4">
+              <span class="material-icons-outlined text-5xl">table_restaurant</span>
+            </div>
+            <h3 class="text-xl font-black text-gray-800 uppercase tracking-tight mb-1">
+              @if (tableSearchQuery()) {
+                No se encontraron mesas con "{{ tableSearchQuery() }}"
+              } @else {
+                ¡No hay mesas con pedidos pendientes!
+              }
+            </h3>
+            <p class="text-xs text-gray-400 font-bold uppercase tracking-wider max-w-sm mb-6">
+              Todas las mesas del salón están libres o ya fueron cobradas.
+            </p>
+            <div class="flex items-center gap-3">
+              <button 
+                type="button" 
+                (click)="loadOrders()"
+                class="px-5 py-3 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2"
+              >
+                <span class="material-icons-outlined text-sm">refresh</span> Actualizar
+              </button>
+              <button 
+                type="button" 
+                (click)="setActiveTab('pos')"
+                class="px-5 py-3 bg-orange-600 text-white hover:bg-orange-700 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-orange-200 flex items-center gap-2"
+              >
+                <span class="material-icons-outlined text-sm">add</span> Tomar Nuevo Pedido
+              </button>
+            </div>
+          </div>
+        } @else {
+          <!-- Grid of Occupied Table Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            @for (order of filteredTableOrders(); track order.id) {
+              <div class="bg-white rounded-2xl shadow-sm border-2 border-orange-100 hover:border-orange-500 hover:shadow-md transition-all flex flex-col overflow-hidden group">
+                <!-- Card Header -->
+                <div class="p-4 bg-orange-50/60 border-b border-orange-100 flex justify-between items-center">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-orange-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
+                      <span class="material-icons-outlined text-xl">table_restaurant</span>
+                    </div>
+                    <div>
+                      <span class="text-sm font-black text-gray-900 uppercase tracking-tight block">
+                        Mesa {{ order.tableNumber }}
+                      </span>
+                      <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        Orden #{{ order.id }} • {{ getTimeAgo(order.orderDate) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <span 
+                    [class]="getStatusBadgeClass(order.status)"
+                    class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-2xs"
+                  >
+                    {{ getStatusLabel(order.status) }}
+                  </span>
+                </div>
+
+                <!-- Card Body: Customer & Waiter Info -->
+                <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div class="flex justify-between items-center text-xs">
+                    <div class="flex items-center gap-1.5 text-gray-700">
+                      <span class="material-icons-outlined text-base text-gray-400">person</span>
+                      <span class="font-bold truncate max-w-[150px]">{{ order.customerName || 'Cliente en Salón' }}</span>
+                    </div>
+                    <div class="text-[10px] text-gray-400 font-bold uppercase">
+                      Mozo: {{ order.employeeName || 'Staff' }}
+                    </div>
+                  </div>
+
+                  <!-- Items Preview -->
+                  <div class="bg-gray-50 rounded-xl p-3 space-y-1.5 max-h-36 overflow-y-auto border border-gray-100">
+                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">
+                      Productos ({{ order.details.length }})
+                    </span>
+                    @for (item of order.details; track item.id) {
+                      <div class="flex justify-between items-center text-xs">
+                        <div class="flex items-center gap-1 min-w-0 pr-2">
+                          <span class="font-black text-orange-600 text-[11px]">{{ item.quantity }}x</span>
+                          <span class="font-bold text-gray-800 truncate">{{ item.productName }}</span>
+                        </div>
+                        <span class="font-bold text-gray-600 whitespace-nowrap">S/ {{ item.subtotal.toFixed(2) }}</span>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Total Amount -->
+                  <div class="flex justify-between items-baseline pt-2 border-t border-gray-100">
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total a Cobrar</span>
+                    <span class="text-xl font-black text-orange-600 tracking-tight">S/ {{ order.totalAmount.toFixed(2) }}</span>
+                  </div>
+                </div>
+
+                <!-- Card Actions -->
+                <div class="p-3 bg-gray-50/80 border-t border-gray-100 flex items-center gap-2">
+                  <!-- Cobrar Mesa (Primary Action) -->
+                  <button 
+                    type="button"
+                    (click)="openTableCheckout(order)"
+                    class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 px-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95"
+                  >
+                    <span class="material-icons-outlined text-base">payments</span>
+                    <span>Cobrar Mesa</span>
+                  </button>
+
+                  <!-- Ver Detalle -->
+                  <button 
+                    type="button"
+                    (click)="openTableDetail(order)"
+                    class="p-2.5 bg-white hover:bg-gray-100 text-gray-700 rounded-xl border border-gray-200 transition-colors"
+                    title="Ver comanda y detalle completo"
+                  >
+                    <span class="material-icons-outlined text-base">receipt_long</span>
+                  </button>
+
+                  <!-- Cargar a POS -->
+                  <button 
+                    type="button"
+                    (click)="loadTableOrderToCart(order)"
+                    class="p-2.5 bg-white hover:bg-orange-50 text-orange-600 rounded-xl border border-gray-200 hover:border-orange-200 transition-colors"
+                    title="Cargar productos al carrito del POS para agregar más"
+                  >
+                    <span class="material-icons-outlined text-base">edit_note</span>
+                  </button>
+
+                  <!-- Cancelar Orden -->
+                  <button 
+                    type="button"
+                    (click)="cancelTableOrder(order)"
+                    class="p-2.5 bg-white hover:bg-red-50 text-red-500 rounded-xl border border-gray-200 hover:border-red-200 transition-colors"
+                    title="Cancelar pedido de la mesa"
+                  >
+                    <span class="material-icons-outlined text-base">delete_outline</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      }
+
+      <!-- Mode B: Plano Completo de Mesas del Salón -->
+      @if (tablesViewMode() === 'all_tables') {
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
+          @for (table of allFloorTables(); track table.number) {
+            <button 
+              type="button"
+              (click)="selectFloorTable(table)"
+              [class.border-orange-500]="table.isOccupied"
+              [class.bg-orange-50/40]="table.isOccupied"
+              [class.shadow-md]="table.isOccupied"
+              [class.border-gray-200]="!table.isOccupied"
+              [class.bg-white]="!table.isOccupied"
+              [class.hover:border-green-500]="!table.isOccupied"
+              class="p-4 rounded-2xl border-2 flex flex-col items-center justify-between text-center transition-all h-44 group relative overflow-hidden active:scale-95"
+            >
+              <!-- Status Pill Indicator -->
+              <div class="w-full flex justify-between items-center mb-1">
+                <span class="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
+                  [class.bg-orange-600]="table.isOccupied"
+                  [class.text-white]="table.isOccupied"
+                  [class.bg-green-100]="!table.isOccupied"
+                  [class.text-green-700]="!table.isOccupied"
+                >
+                  {{ table.isOccupied ? 'Ocupada' : 'Libre' }}
                 </span>
+                @if (table.isOccupied && table.order) {
+                  <span class="text-[9px] font-bold text-gray-400">#{{ table.order.id }}</span>
+                }
               </div>
-              <div class="mt-auto flex justify-center pt-2 border-t border-gray-50 group-hover:border-orange-100 transition-colors">
-                 <span class="text-[10px] font-black text-gray-400 group-hover:text-orange-600 uppercase tracking-tighter flex items-center gap-1">
-                   <span class="material-icons-outlined text-sm">add_circle</span>
-                   Agregar
-                 </span>
+
+              <!-- Table Icon & Number -->
+              <div class="my-auto flex flex-col items-center">
+                <div 
+                  [class.bg-orange-600]="table.isOccupied"
+                  [class.text-white]="table.isOccupied"
+                  [class.bg-gray-100]="!table.isOccupied"
+                  [class.text-gray-400]="!table.isOccupied"
+                  [class.group-hover:bg-green-600]="!table.isOccupied"
+                  [class.group-hover:text-white]="!table.isOccupied"
+                  class="w-12 h-12 rounded-2xl flex items-center justify-center transition-colors mb-2 shadow-sm"
+                >
+                  <span class="material-icons-outlined text-2xl">table_restaurant</span>
+                </div>
+                <h4 class="font-black text-gray-800 text-sm uppercase tracking-tight">{{ table.label }}</h4>
+              </div>
+
+              <!-- Table Bottom Info -->
+              <div class="w-full pt-2 border-t border-gray-100">
+                @if (table.isOccupied && table.order) {
+                  <span class="text-xs font-black text-orange-600 block">
+                    S/ {{ table.order.totalAmount.toFixed(2) }}
+                  </span>
+                  <span class="text-[9px] font-bold text-gray-500 uppercase block">
+                    {{ table.order.details.length }} items • Cobrar
+                  </span>
+                } @else {
+                  <span class="text-[10px] font-black text-gray-400 group-hover:text-green-600 uppercase flex items-center justify-center gap-1 transition-colors">
+                    <span class="material-icons-outlined text-xs">add_circle</span> Ocupar
+                  </span>
+                }
               </div>
             </button>
           }
-        }
-      </div>
+        </div>
+      }
     </div>
+  }
 
-    <!-- Order Summary Section (Desktop and Mobile Overlay) -->
-    <div 
-      [class.translate-y-0]="showCartMobile()"
-      [class.translate-y-full]="!showCartMobile()"
-      class="fixed inset-x-0 bottom-0 z-40 bg-white rounded-t-3xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] flex flex-col max-h-[85vh] transition-transform duration-500 lg:relative lg:translate-y-0 lg:z-0 lg:w-80 lg:xl:w-96 lg:rounded-2xl lg:shadow-xl lg:max-h-none lg:border lg:border-gray-100 overflow-hidden"
-    >
-      <!-- Cart Header -->
-      <div class="p-5 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
-        <h2 class="text-lg font-black text-gray-800 flex items-center gap-2">
-          <span class="material-icons-outlined text-orange-600">shopping_basket</span> 
-          TU PEDIDO
-        </h2>
-        <div class="flex items-center gap-3 lg:hidden">
-          <span class="bg-orange-600 text-white px-3 py-1 rounded-full text-xs font-black">{{ cart().length }} items</span>
-          <button (click)="showCartMobile.set(false)" class="p-1 text-gray-400 hover:text-gray-600">
-            <span class="material-icons-outlined">expand_more</span>
+  <!-- ========================================== -->
+  <!-- VIEW 2: VISTA POS (CATÁLOGO & CARRITO)     -->
+  <!-- ========================================== -->
+  @if (activeTab() === 'pos') {
+    <div class="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+      <!-- Product Grid Section -->
+      <div class="flex-1 space-y-4 overflow-y-auto pr-1">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+          @if (loadingProducts()) {
+            @for (i of [1,2,3,4,5,6,7,8]; track i) {
+              <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-50 animate-pulse">
+                <div class="aspect-square bg-gray-200 rounded-xl mb-3"></div>
+                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            }
+          } @else {
+            @for (product of products(); track product.id) {
+              <button 
+                type="button"
+                (click)="addToCart(product)"
+                class="bg-white p-3 sm:p-4 rounded-2xl shadow-sm border-2 border-transparent hover:border-orange-500 hover:shadow-xl hover:-translate-y-1 transition-all text-left group flex flex-col h-full active:scale-95"
+              >
+                <div class="aspect-square bg-gray-50 rounded-xl mb-3 flex items-center justify-center overflow-hidden border border-gray-100 relative">
+                   @if (product.imageUrl) {
+                     <img [src]="product.imageUrl" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                   } @else {
+                     <span class="material-icons-outlined text-4xl text-gray-200">restaurant</span>
+                   }
+                   <div class="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm border border-gray-100">
+                      <span class="text-xs font-black text-orange-600">S/ {{ product.basePrice.toFixed(2) }}</span>
+                   </div>
+                </div>
+                <div class="flex-1">
+                  <h3 class="font-black text-gray-800 text-xs sm:text-sm leading-tight uppercase line-clamp-2 mb-1 group-hover:text-orange-600 transition-colors">
+                    {{ product.name }}
+                  </h3>
+                  <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-2 italic">
+                    {{ product.categoryName || 'General' }}
+                  </span>
+                </div>
+                <div class="mt-auto flex justify-center pt-2 border-t border-gray-50 group-hover:border-orange-100 transition-colors">
+                   <span class="text-[10px] font-black text-gray-400 group-hover:text-orange-600 uppercase tracking-tighter flex items-center gap-1">
+                     <span class="material-icons-outlined text-sm">add_circle</span>
+                     Agregar
+                   </span>
+                </div>
+              </button>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Order Summary Section (Desktop and Mobile Overlay) -->
+      <div 
+        [class.translate-y-0]="showCartMobile()"
+        [class.translate-y-full]="!showCartMobile()"
+        class="fixed inset-x-0 bottom-0 z-40 bg-white rounded-t-3xl shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.3)] flex flex-col max-h-[85vh] transition-transform duration-500 lg:relative lg:translate-y-0 lg:z-0 lg:w-80 lg:xl:w-96 lg:rounded-2xl lg:shadow-xl lg:max-h-none lg:border lg:border-gray-100 overflow-hidden"
+      >
+        <!-- Cart Header -->
+        <div class="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center sticky top-0 z-10 backdrop-blur-sm">
+          <div class="flex items-center gap-2">
+            <span class="material-icons-outlined text-orange-600">shopping_basket</span> 
+            <h2 class="text-base font-black text-gray-800 uppercase">Tu Pedido</h2>
+          </div>
+
+          <div class="flex items-center gap-2">
+            @if (cart().length > 0) {
+              <button 
+                type="button" 
+                (click)="clearCart()" 
+                class="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase"
+                title="Limpiar carrito"
+              >
+                Vaciar
+              </button>
+            }
+            <div class="flex items-center gap-2 lg:hidden">
+              <span class="bg-orange-600 text-white px-2 py-0.5 rounded-full text-xs font-black">{{ cart().length }}</span>
+              <button (click)="showCartMobile.set(false)" class="p-1 text-gray-400 hover:text-gray-600">
+                <span class="material-icons-outlined">expand_more</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Mode Selector: Mostrador vs Mesa -->
+        <div class="p-3 bg-gray-50 border-b border-gray-100">
+          <div class="grid grid-cols-2 gap-1.5 p-1 bg-gray-200/70 rounded-xl text-xs font-black uppercase">
+            <button 
+              type="button"
+              (click)="orderMode.set('counter')"
+              [class.bg-white]="orderMode() === 'counter'"
+              [class.text-orange-600]="orderMode() === 'counter'"
+              [class.shadow-xs]="orderMode() === 'counter'"
+              [class.text-gray-600]="orderMode() !== 'counter'"
+              class="py-2 rounded-lg transition-all flex items-center justify-center gap-1"
+            >
+              <span class="material-icons-outlined text-sm">storefront</span>
+              <span>Mostrador</span>
+            </button>
+            <button 
+              type="button"
+              (click)="orderMode.set('table')"
+              [class.bg-white]="orderMode() === 'table'"
+              [class.text-orange-600]="orderMode() === 'table'"
+              [class.shadow-xs]="orderMode() === 'table'"
+              [class.text-gray-600]="orderMode() !== 'table'"
+              class="py-2 rounded-lg transition-all flex items-center justify-center gap-1"
+            >
+              <span class="material-icons-outlined text-sm">table_restaurant</span>
+              <span>En Mesa</span>
+            </button>
+          </div>
+
+          <!-- Table Number Selector if 'table' mode -->
+          @if (orderMode() === 'table') {
+            <div class="mt-2.5 flex items-center gap-2">
+              <label class="text-[10px] font-black text-gray-500 uppercase tracking-wider">Número de Mesa:</label>
+              <select 
+                [ngModel]="selectedTableNumber()"
+                (ngModelChange)="selectedTableNumber.set($event)"
+                class="flex-1 py-1.5 px-3 rounded-lg border border-gray-300 bg-white text-xs font-black text-gray-800 outline-none focus:border-orange-500"
+              >
+                @for (num of ['1','2','3','4','5','6','7','8','9','10','11','12','Terraza 1','Terraza 2','Barra']; track num) {
+                  <option [value]="num">Mesa {{ num }}</option>
+                }
+              </select>
+            </div>
+          }
+        </div>
+
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3 min-h-[220px] lg:min-h-0">
+          @if (cart().length === 0) {
+            <div class="flex flex-col items-center justify-center py-16 text-gray-300">
+              <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+                <span class="material-icons-outlined text-3xl">shopping_cart</span>
+              </div>
+              <p class="font-black text-xs uppercase tracking-widest">Carrito Vacío</p>
+              <span class="text-[10px] text-gray-400 mt-1">Selecciona productos para comenzar</span>
+            </div>
+          } @else {
+            @for (item of cart(); track item.id) {
+              <div class="flex justify-between items-center bg-white p-2.5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                <div class="flex-1 min-w-0 pr-3">
+                  <h4 class="font-black text-gray-800 text-[11px] sm:text-xs uppercase truncate">{{ item.name }}</h4>
+                  <p class="text-[10px] font-bold text-orange-600 italic">S/ {{ (item.basePrice * item.quantity).toFixed(2) }}</p>
+                </div>
+                <div class="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-100">
+                  <button (click)="removeFromCart(item.id)" class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-all">
+                    <span class="material-icons-outlined text-lg">remove</span>
+                  </button>
+                  <span class="font-black text-xs w-6 text-center text-gray-800">{{ item.quantity }}</span>
+                  <button (click)="addToCart(item)" class="w-7 h-7 flex items-center justify-center text-orange-600 hover:bg-white rounded-lg transition-all">
+                    <span class="material-icons-outlined text-lg">add</span>
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <!-- Cart Footer -->
+        <div class="p-5 bg-gray-900 text-white border-t border-white/5">
+          <div class="flex justify-between items-end mb-4">
+            <div class="flex flex-col">
+              <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Total a pagar</span>
+              <span class="text-[11px] font-bold text-gray-400 italic">
+                {{ cart().length }} items • {{ orderMode() === 'table' ? ('Mesa ' + selectedTableNumber()) : 'Mostrador' }}
+              </span>
+            </div>
+            <span class="text-2xl font-black text-orange-500 tracking-tighter">S/ {{ totalPrice().toFixed(2) }}</span>
+          </div>
+
+          <button 
+            type="button"
+            [disabled]="cart().length === 0 || loading()"
+            (click)="showClientModal.set(true)"
+            class="w-full bg-orange-600 text-white py-3.5 rounded-xl font-black hover:bg-orange-700 active:scale-95 transition-all shadow-[0_10px_30px_-10px_rgba(234,88,12,0.5)] disabled:opacity-30 disabled:shadow-none text-xs sm:text-sm tracking-widest uppercase flex items-center justify-center gap-2"
+          >
+            <span class="material-icons-outlined">payments</span>
+            FINALIZAR VENTA
           </button>
         </div>
       </div>
+    </div>
 
-      <!-- Cart Items -->
-      <div class="flex-1 overflow-y-auto p-4 space-y-3 min-h-[300px] lg:min-h-0">
-        @if (cart().length === 0) {
-          <div class="flex flex-col items-center justify-center py-20 text-gray-200">
-            <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-              <span class="material-icons-outlined text-4xl">shopping_cart</span>
-            </div>
-            <p class="font-black text-xs uppercase tracking-[0.2em]">Carrito Vacío</p>
-          </div>
-        } @else {
-          @for (item of cart(); track item.id) {
-            <div class="flex justify-between items-center bg-white p-3 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-              <div class="flex-1 min-w-0 pr-3">
-                <h4 class="font-black text-gray-800 text-[11px] sm:text-xs uppercase truncate">{{ item.name }}</h4>
-                <p class="text-[10px] font-bold text-orange-600 italic">S/ {{ (item.basePrice * item.quantity).toFixed(2) }}</p>
-              </div>
-              <div class="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-100">
-                <button (click)="removeFromCart(item.id)" class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-all">
-                  <span class="material-icons-outlined text-lg">remove</span>
-                </button>
-                <span class="font-black text-xs w-6 text-center text-gray-800">{{ item.quantity }}</span>
-                <button (click)="addToCart(item)" class="w-7 h-7 flex items-center justify-center text-orange-600 hover:bg-white rounded-lg transition-all">
-                  <span class="material-icons-outlined text-lg">add</span>
-                </button>
-              </div>
-            </div>
-          }
+    <!-- Mobile Floating Cart Button -->
+    <div class="fixed bottom-6 right-6 z-30 lg:hidden">
+      <button 
+        type="button"
+        (click)="showCartMobile.set(true)"
+        class="bg-gray-900 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 active:scale-90 transition-all border border-white/10 relative"
+      >
+        @if (cart().length > 0) {
+          <span class="absolute -top-2 -right-2 bg-orange-600 text-white w-6 h-6 rounded-full text-[10px] font-black flex items-center justify-center shadow-lg animate-bounce">
+            {{ cart().length }}
+          </span>
         }
-      </div>
+        <span class="material-icons-outlined">shopping_basket</span>
+        <span class="font-black text-xs uppercase tracking-widest pr-2">Mi Pedido</span>
+      </button>
+    </div>
+  }
 
-      <!-- Cart Footer -->
-      <div class="p-6 bg-gray-900 text-white border-t border-white/5">
-        <div class="flex justify-between items-end mb-6">
-          <div class="flex flex-col">
-            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total a pagar</span>
-            <span class="text-xs font-bold text-gray-400 italic">{{ cart().length }} productos agregados</span>
+  <!-- ============================================================== -->
+  <!-- SLIDE-OUT QUICK MESAS MENU (ACCESSIBLE FROM ANYWHERE EN POS)    -->
+  <!-- ============================================================== -->
+  @if (showTablesMenu()) {
+    <div class="fixed inset-0 z-50 overflow-hidden">
+      <!-- Backdrop -->
+      <div 
+        (click)="closeTablesMenu()" 
+        class="absolute inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+      ></div>
+
+      <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+        <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col">
+          <!-- Drawer Header -->
+          <div class="p-5 bg-orange-600 text-white flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+              <span class="material-icons-outlined text-2xl">table_restaurant</span>
+              <div>
+                <h3 class="font-black text-base uppercase tracking-tight">Mesas con Pedidos</h3>
+                <span class="text-[10px] font-bold text-orange-200 uppercase tracking-widest">
+                  {{ activeTablesCount() }} mesas activas en salón
+                </span>
+              </div>
+            </div>
+            <button (click)="closeTablesMenu()" class="p-1 rounded-lg hover:bg-orange-700 transition-colors">
+              <span class="material-icons-outlined">close</span>
+            </button>
           </div>
-          <span class="text-3xl font-black text-orange-500 tracking-tighter">S/ {{ totalPrice().toFixed(2) }}</span>
+
+          <!-- Drawer Content: List of active tables with orders -->
+          <div class="flex-1 overflow-y-auto p-4 space-y-3">
+            @if (activeTableOrders().length === 0) {
+              <div class="py-16 text-center text-gray-400">
+                <span class="material-icons-outlined text-5xl text-gray-300 mb-2">check_circle</span>
+                <p class="font-black text-xs uppercase tracking-wider">No hay mesas con pedidos pendientes</p>
+                <span class="text-[10px] text-gray-400">Todas las mesas están desocupadas.</span>
+              </div>
+            } @else {
+              @for (order of activeTableOrders(); track order.id) {
+                <div class="bg-white rounded-2xl border-2 border-orange-100 p-4 shadow-xs hover:border-orange-500 transition-all space-y-3">
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                      <span class="w-8 h-8 rounded-lg bg-orange-100 text-orange-700 font-black text-xs flex items-center justify-center">
+                        M{{ order.tableNumber }}
+                      </span>
+                      <div>
+                        <span class="font-black text-gray-800 text-sm block">Mesa {{ order.tableNumber }}</span>
+                        <span class="text-[9px] font-bold text-gray-400 uppercase">Orden #{{ order.id }} • {{ getTimeAgo(order.orderDate) }}</span>
+                      </div>
+                    </div>
+                    <span class="text-base font-black text-orange-600">S/ {{ order.totalAmount.toFixed(2) }}</span>
+                  </div>
+
+                  <!-- Quick items preview -->
+                  <div class="text-[11px] text-gray-600 bg-gray-50 p-2 rounded-xl border border-gray-100 space-y-1">
+                    @for (item of order.details.slice(0, 3); track item.id) {
+                      <div class="flex justify-between">
+                        <span class="truncate pr-2 font-bold">{{ item.quantity }}x {{ item.productName }}</span>
+                        <span class="text-gray-500 font-semibold">S/ {{ item.subtotal.toFixed(2) }}</span>
+                      </div>
+                    }
+                    @if (order.details.length > 3) {
+                      <span class="text-[9px] text-orange-600 font-bold block pt-0.5 italic">
+                        + {{ order.details.length - 3 }} productos más...
+                      </span>
+                    }
+                  </div>
+
+                  <!-- Quick actions in drawer -->
+                  <div class="flex items-center gap-2 pt-1">
+                    <button 
+                      type="button"
+                      (click)="openTableCheckout(order)"
+                      class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1 shadow-xs active:scale-95"
+                    >
+                      <span class="material-icons-outlined text-sm">payments</span>
+                      <span>Cobrar</span>
+                    </button>
+                    <button 
+                      type="button"
+                      (click)="loadTableOrderToCart(order)"
+                      class="px-3 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-xl font-bold text-[11px] uppercase tracking-wider border border-orange-200"
+                      title="Cargar al Punto de Venta"
+                    >
+                      Cargar POS
+                    </button>
+                    <button 
+                      type="button"
+                      (click)="openTableDetail(order)"
+                      class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl"
+                      title="Ver Comanda"
+                    >
+                      <span class="material-icons-outlined text-base">receipt</span>
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <!-- Drawer Footer -->
+          <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+            <span class="text-xs font-black text-gray-500 uppercase">Total en salón:</span>
+            <span class="text-base font-black text-gray-900">S/ {{ totalPendingAmountInTables().toFixed(2) }}</span>
+          </div>
         </div>
-        <button 
-          [disabled]="cart().length === 0 || loading()"
-          (click)="showClientModal.set(true)"
-          class="w-full bg-orange-600 text-white py-4 rounded-2xl font-black hover:bg-orange-700 active:scale-95 transition-all shadow-[0_10px_30px_-10px_rgba(234,88,12,0.5)] disabled:opacity-30 disabled:shadow-none text-xs sm:text-sm tracking-widest uppercase flex items-center justify-center gap-2"
-        >
-          <span class="material-icons-outlined">payments</span>
-          FINALIZAR VENTA
-        </button>
       </div>
     </div>
-  </div>
+  }
 
-  <!-- Mobile Floating Cart Button -->
-  <div class="fixed bottom-6 right-6 z-30 lg:hidden">
-    <button 
-      (click)="showCartMobile.set(true)"
-      class="bg-gray-900 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-3 active:scale-90 transition-all border border-white/10 relative"
-    >
-      @if (cart().length > 0) {
-        <span class="absolute -top-2 -right-2 bg-orange-600 text-white w-6 h-6 rounded-full text-[10px] font-black flex items-center justify-center shadow-lg animate-bounce">
-          {{ cart().length }}
-        </span>
-      }
-      <span class="material-icons-outlined">shopping_basket</span>
-      <span class="font-black text-xs uppercase tracking-widest pr-2">Mi Pedido</span>
-    </button>
-  </div>
+  <!-- ============================================================== -->
+  <!-- MODAL: DETALLE DE COMANDA DE LA MESA                           -->
+  <!-- ============================================================== -->
+  @if (showTableDetailModal() && selectedTableOrder()) {
+    <div class="fixed inset-0 z-[60] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="p-5 bg-gray-900 text-white flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center font-black">
+              <span class="material-icons-outlined">table_restaurant</span>
+            </div>
+            <div>
+              <h3 class="font-black text-lg uppercase tracking-tight">Comanda Mesa {{ selectedTableOrder()?.tableNumber }}</h3>
+              <p class="text-[10px] text-gray-400 font-bold uppercase">
+                Orden #{{ selectedTableOrder()?.id }} • {{ selectedTableOrder()?.orderDate | date:'medium' }}
+              </p>
+            </div>
+          </div>
+          <button (click)="closeTableDetail()" class="p-1 text-gray-400 hover:text-white">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
 
-  <!-- Identificación Fiscal Modal -->
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto space-y-4 flex-1">
+          <!-- Client & Waiter meta -->
+          <div class="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-2xl text-xs">
+            <div>
+              <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Cliente</span>
+              <span class="font-bold text-gray-800">{{ selectedTableOrder()?.customerName || 'Cliente en Salón' }}</span>
+            </div>
+            <div>
+              <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Atendido por</span>
+              <span class="font-bold text-gray-800">{{ selectedTableOrder()?.employeeName || 'Staff' }}</span>
+            </div>
+          </div>
+
+          <!-- Product Details Table -->
+          <div>
+            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Detalle de Productos</h4>
+            <div class="border border-gray-100 rounded-2xl overflow-hidden">
+              <table class="w-full text-xs">
+                <thead class="bg-gray-50 text-gray-500 uppercase text-[9px] font-black">
+                  <tr>
+                    <th class="p-2.5 text-left">Cant.</th>
+                    <th class="p-2.5 text-left">Producto</th>
+                    <th class="p-2.5 text-right">P. Unit</th>
+                    <th class="p-2.5 text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  @for (item of selectedTableOrder()?.details; track item.id) {
+                    <tr>
+                      <td class="p-2.5 font-black text-orange-600">{{ item.quantity }}</td>
+                      <td class="p-2.5 font-bold text-gray-800">{{ item.productName }}</td>
+                      <td class="p-2.5 text-right text-gray-500">S/ {{ item.unitPrice.toFixed(2) }}</td>
+                      <td class="p-2.5 text-right font-black text-gray-800">S/ {{ item.subtotal.toFixed(2) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Total Calculation -->
+          <div class="p-4 bg-orange-50 rounded-2xl border border-orange-100 flex justify-between items-center">
+            <span class="text-xs font-black text-orange-800 uppercase tracking-wider">Total Cuenta:</span>
+            <span class="text-2xl font-black text-orange-600">S/ {{ selectedTableOrder()?.totalAmount?.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="p-4 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-2 justify-end">
+          <button 
+            type="button"
+            (click)="printPreCuenta(selectedTableOrder()!)"
+            class="px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-700 rounded-xl font-bold text-xs uppercase tracking-wider border border-gray-200 flex items-center gap-1.5"
+          >
+            <span class="material-icons-outlined text-base">print</span>
+            <span>Imprimir Pre-Cuenta</span>
+          </button>
+
+          <button 
+            type="button"
+            (click)="loadTableOrderToCart(selectedTableOrder()!)"
+            class="px-4 py-2.5 bg-orange-100 hover:bg-orange-200 text-orange-800 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-1.5"
+          >
+            <span class="material-icons-outlined text-base">edit</span>
+            <span>Cargar a POS</span>
+          </button>
+
+          <button 
+            type="button"
+            (click)="openTableCheckout(selectedTableOrder()!)"
+            class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-green-200"
+          >
+            <span class="material-icons-outlined text-base">payments</span>
+            <span>Cobrar Mesa</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- MODAL: COBRAR MESA Y GENERAR COMPROBANTE                       -->
+  <!-- ============================================================== -->
+  @if (showTableCheckoutModal() && selectedTableOrder()) {
+    <div class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+        <!-- Header -->
+        <div class="p-6 bg-gray-900 text-white flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center font-black">
+              <span class="material-icons-outlined">payments</span>
+            </div>
+            <div>
+              <h3 class="font-black text-lg uppercase tracking-tight">Cobrar Mesa {{ selectedTableOrder()?.tableNumber }}</h3>
+              <p class="text-[10px] text-green-400 font-bold uppercase tracking-wider">
+                Total: S/ {{ selectedTableOrder()?.totalAmount?.toFixed(2) }}
+              </p>
+            </div>
+          </div>
+          <button (click)="closeTableCheckout()" class="p-1 text-gray-400 hover:text-white">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+
+        <!-- Form -->
+        <form [formGroup]="tableCheckoutForm" (ngSubmit)="processTablePayment()" class="p-6 space-y-6">
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Documento (DNI/RUC) - Opcional p/ Facturación</label>
+            <div class="relative flex items-center">
+              <input 
+                type="text" 
+                formControlName="documentNumber"
+                placeholder="00000000"
+                maxlength="11"
+                class="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-100 bg-gray-50 focus:bg-white focus:border-orange-500 outline-none transition-all font-black text-lg text-gray-800 pr-16 shadow-inner"
+              >
+              <button 
+                type="button"
+                (click)="searchTableDoc()"
+                [disabled]="searchingTableDoc()"
+                class="absolute right-2 bg-gray-900 text-white w-10 h-10 rounded-xl hover:bg-orange-600 disabled:opacity-30 transition-all flex items-center justify-center"
+              >
+                @if (searchingTableDoc()) {
+                  <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                } @else {
+                  <span class="material-icons-outlined text-sm">search</span>
+                }
+              </button>
+            </div>
+            <span class="text-[9px] text-gray-400 font-bold uppercase block">DNI: 8 dígitos | RUC: 11 dígitos (Valida en SUNAT/RENIEC)</span>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Nombre / Razón Social</label>
+            <input 
+              type="text" 
+              formControlName="name"
+              placeholder="Nombre del cliente..."
+              class="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-100 bg-gray-50 focus:bg-white focus:border-orange-500 outline-none font-bold text-gray-800 text-sm uppercase shadow-inner"
+            >
+          </div>
+
+          <!-- Total Callout -->
+          <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center">
+            <span class="text-xs font-black text-gray-500 uppercase">Monto Total a Cancelar:</span>
+            <span class="text-2xl font-black text-green-600">S/ {{ selectedTableOrder()?.totalAmount?.toFixed(2) }}</span>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="pt-2 flex gap-3">
+            <button 
+              type="button" 
+              (click)="closeTableCheckout()"
+              class="flex-1 py-3.5 rounded-xl font-bold border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs uppercase tracking-wider"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              [disabled]="processingTablePayment()"
+              class="flex-[1.5] py-3.5 rounded-xl font-black bg-green-600 hover:bg-green-700 text-white text-xs uppercase tracking-wider shadow-lg shadow-green-200 transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+            >
+              @if (processingTablePayment()) {
+                <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>PROCESANDO...</span>
+              } @else {
+                <span class="material-icons-outlined text-base">check_circle</span>
+                <span>CONFIRMAR Y EMITIR</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ============================================================== -->
+  <!-- MODAL: CLIENTE Y EMISIÓN PARA VENTA DIRECTA POS               -->
+  <!-- ============================================================== -->
   @if (showClientModal()) {
     <div class="fixed inset-0 z-[60] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4">
       <div class="bg-white rounded-[32px] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in slide-in-from-bottom-8 duration-500">
@@ -163,6 +925,9 @@
             <h3 class="text-xl sm:text-2xl font-black text-gray-800 uppercase tracking-tighter">Identificación</h3>
             <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest italic flex items-center gap-1">
               <span class="material-icons-outlined text-xs">verified</span> Validación RENIEC / SUNAT
+              @if (orderMode() === 'table') {
+                <span>• Mesa {{ selectedTableNumber() }}</span>
+              }
             </p>
           </div>
           <button (click)="showClientModal.set(false)" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors relative z-10">

@@ -19,6 +19,10 @@ export class OrderService {
     return this.http.get<OrderResponse>(`${this.apiUrl}/${id}`);
   }
 
+  getOrderByTableNumber(tableNumber: string): Observable<OrderResponse> {
+    return this.http.get<OrderResponse>(`${this.apiUrl}/mesa/${encodeURIComponent(tableNumber)}`);
+  }
+
   createOrder(request: OrderRequest): Observable<OrderResponse> {
     return this.http.post<OrderResponse>(this.apiUrl, request);
   }
@@ -28,19 +32,15 @@ export class OrderService {
   }
 
   updateOrderStatus(id: number, status: string): Observable<void> {
-    return this.http.patch<void>(`${this.apiUrl}/${id}/status`, `"${status}"`, {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return this.http.patch<void>(`${this.apiUrl}/${id}/status`, { status });
   }
 
   updatePaymentStatus(id: number, status: string): Observable<void> {
-    return this.http.patch<void>(`${this.apiUrl}/${id}/payment-status`, `"${status}"`, {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return this.http.patch<void>(`${this.apiUrl}/${id}/payment-status`, { status });
   }
 
   acceptDelivery(id: number, deliveryUserId: number): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/${id}/accept-delivery`, deliveryUserId);
+    return this.http.post<void>(`${this.apiUrl}/${id}/accept-delivery`, { deliveryUserId });
   }
 
   deleteOrder(id: number): Observable<void> {

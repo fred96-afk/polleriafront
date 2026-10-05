@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable } from '@angular/core';
 import Pusher from 'pusher-js';
 import { enviroment } from '../../enviroments/enviroments.development';
 import { Subject } from 'rxjs';
@@ -9,23 +9,21 @@ import { Subject } from 'rxjs';
 export class PusherService {
   private pusher: Pusher;
   private channel: any;
+  private ordersChannel: any;
   
-  // Observable para notificaciones de nuevos pedidos
+  // Observable para notificaciones de pedidos
   private orderNotificationSource = new Subject<any>();
   orderNotifications$ = this.orderNotificationSource.asObservable();
 
   constructor() {
-    // Activar logging de Pusher para depuración
     Pusher.logToConsole = true;
 
-    // Configuración de Pusher
     this.pusher = new Pusher(enviroment.pusher.key, {
       cluster: enviroment.pusher.cluster,
       forceTLS: true,
       enabledTransports: ['ws', 'wss']
     });
 
-    // Monitorear el estado de la conexión
     this.pusher.connection.bind('state_change', (states: any) => {
       console.log('Pusher Connection State changed:', states);
     });
@@ -36,14 +34,26 @@ export class PusherService {
 
     // Suscribirse al canal de administración
     this.channel = this.pusher.subscribe('admin-channel');
-
-    // Escuchar eventos de nuevos pedidos
     this.channel.bind('new-order', (data: any) => {
       this.orderNotificationSource.next(data);
     });
+
+    // Suscribirse al canal 'orders' del backend
+    this.ordersChannel = this.pusher.subscribe('orders');
+    this.ordersChannel.bind('new-order', (data: any) => {
+      this.orderNotificationSource.next({ event: 'new-order', ...data });
+    });
+    this.ordersChannel.bind('status-updated', (data: any) => {
+      this.orderNotificationSource.next({ event: 'status-updated', ...data });
+    });
+    this.ordersChannel.bind('payment-updated', (data: any) => {
+      this.orderNotificationSource.next({ event: 'payment-updated', ...data });
+    });
+    this.ordersChannel.bind('order-accepted', (data: any) => {
+      this.orderNotificationSource.next({ event: 'order-accepted', ...data });
+    });
   }
 
-  // Método para suscribirse a otros canales o eventos si es necesario
   subscribeToChannel(channelName: string, eventName: string, callback: (data: any) => void) {
     const channel = this.pusher.subscribe(channelName);
     channel.bind(eventName, callback);

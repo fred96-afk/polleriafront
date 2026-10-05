@@ -12,11 +12,19 @@ export interface OrderDetailResponse {
 export interface OrderResponse {
   id: number;
   orderDate: string;
-  clientId: number;
+  clientId?: number | null;
+  customerName?: string | null;
+  customerAddress?: string | null;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
   userId: number;
+  employeeName?: string | null;
   deliveryUserId?: number | null;
+  deliveryName?: string | null;
   totalAmount: number;
+  type?: string;
   details: OrderDetailResponse[];
+  tableNumber?: string | null;
   status: string;
   paymentStatus: string;
   paymentUrl?: string | null;
@@ -40,4 +48,8 @@ export interface OrderRequest {
   documentNumber?: string | null;
   documentType?: string | null;
   customerEmail?: string | null;
+  customerAddress?: string | null;
+  customerPhone?: string | null;
+  isPickup?: boolean;
+  tableNumber?: string | null;
 }
