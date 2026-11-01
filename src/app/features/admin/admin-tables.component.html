@@ -600,21 +600,21 @@
   <!-- MODAL: CREAR / EDITAR MESA                 -->
   <!-- ========================================== -->
   @if (showTableModal()) {
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full border border-gray-100 overflow-hidden transform transition-all">
-        <div class="p-6 bg-orange-600 text-white flex justify-between items-center">
-          <div class="flex items-center gap-2">
-            <span class="material-icons-outlined text-2xl">table_restaurant</span>
-            <h3 class="font-black text-lg uppercase tracking-tight">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+      <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-lg w-full max-h-[92dvh] border border-gray-100 overflow-hidden flex flex-col transform transition-all">
+        <div class="p-4 sm:p-6 bg-orange-600 text-white flex justify-between items-center gap-3 shrink-0">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="material-icons-outlined text-xl sm:text-2xl shrink-0">table_restaurant</span>
+            <h3 class="font-black text-sm sm:text-lg uppercase tracking-tight leading-snug">
               {{ editingTable() ? 'Editar Mesa (Sillas y Ubicación)' : 'Nueva Mesa con Sillas y Ubicación' }}
             </h3>
           </div>
-          <button (click)="showTableModal.set(false)" class="text-white/80 hover:text-white">
+          <button (click)="showTableModal.set(false)" class="text-white/80 hover:text-white shrink-0">
             <span class="material-icons-outlined">close</span>
           </button>
         </div>
 
-        <form [formGroup]="tableForm" (ngSubmit)="saveTable()" class="p-6 space-y-4">
+        <form [formGroup]="tableForm" (ngSubmit)="saveTable()" class="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           <!-- Número de Mesa -->
           <div>
             <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1">
@@ -644,7 +644,7 @@
 
           <!-- NÚMERO DE SILLAS EN LA MESA -->
           <div class="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80 space-y-2">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:justify-between">
               <label class="block text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
                 <span class="material-icons-outlined text-base text-amber-700">chair</span>
                 <span>Número de Sillas en la Mesa:</span>
@@ -654,13 +654,13 @@
               </span>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
               <input 
                 type="number" 
                 formControlName="chairs"
                 min="1"
                 max="30"
-                class="w-24 px-4 py-2 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-black text-xl text-center"
+                class="w-full sm:w-24 px-4 py-2 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-black text-xl text-center"
               />
               <!-- Botones rápidos de sillas -->
               <div class="flex flex-wrap items-center gap-1.5 flex-1">
@@ -809,18 +809,18 @@
           </div>
 
           <!-- Botones -->
-          <div class="pt-4 flex items-center justify-end gap-2 border-t border-gray-100">
+          <div class="sticky bottom-0 z-10 -mx-4 sm:-mx-6 -mb-4 sm:-mb-6 px-4 sm:px-6 py-4 bg-white flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 border-t border-gray-100">
             <button 
               type="button" 
               (click)="showTableModal.set(false)"
-              class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+              class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
             >
               Cancelar
             </button>
             <button 
               type="submit" 
               [disabled]="tableForm.invalid"
-              class="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider shadow transition-all"
+              class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider shadow transition-all"
             >
               {{ editingTable() ? 'Guardar Cambios' : 'Crear Mesa' }}
             </button>
