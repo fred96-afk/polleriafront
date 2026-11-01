@@ -1,5 +1,5 @@
 export const enviroment = {
-  production: false,
+  production: true,
   backenbaseurl: 'https://polleriaback1.onrender.com',
   // backenbaseurl : "https://localhost:7200",
   apisPeruToken:

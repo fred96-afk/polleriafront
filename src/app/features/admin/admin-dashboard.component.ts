@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { DashboardService } from '../../services/dashboard.service';
 import { DashboardStats } from '../../models/dashboard.model';
 import { finalize } from 'rxjs';
@@ -38,7 +39,7 @@ export type ChartOptions = {
 
 @Component({
   selector: 'app-admin-dashboard',
-  imports: [CommonModule, NgApexchartsModule],
+  imports: [CommonModule, NgApexchartsModule, RouterLink],
   templateUrl: './admin-dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

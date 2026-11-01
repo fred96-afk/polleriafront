@@ -4,12 +4,16 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from '../services/auth.service';
 import { PusherService } from '../services/pusher.service';
 import { OrderService } from '../services/order.service';
+import { TableMapService } from '../services/table-map.service';
+import { ReportService } from '../services/report.service';
+import { NotificationService } from '../services/notification.service';
+import { NotificationBellComponent } from './admin/notification-bell.component';
 import { ToastrService } from 'ngx-toastr';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-layout',
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, NotificationBellComponent],
   templateUrl: './layout.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -17,6 +21,9 @@ export class LayoutComponent implements OnInit, OnDestroy {
   public readonly authService = inject(AuthService);
   private readonly pusherService = inject(PusherService);
   private readonly orderService = inject(OrderService);
+  public readonly tableMapService = inject(TableMapService);
+  public readonly reportService = inject(ReportService);
+  public readonly notificationService = inject(NotificationService);
   private readonly toastService = inject(ToastrService);
   private readonly router = inject(Router);
   
@@ -54,18 +61,21 @@ export class LayoutComponent implements OnInit, OnDestroy {
           o.status !== 'Cancelled'
         ).length;
         this.activeTablesCount.set(count);
+        this.tableMapService.syncTablesWithOrders(orders);
       },
       error: () => {}
     });
   }
 
   private handleNewOrder(data: any) {
-    const orderId = data.id || data.orderId || '';
-    const tableInfo = data.tableNumber ? ` (Mesa ${data.tableNumber})` : '';
+    const id = data.id || data.orderId || '';
+    const customerName = data.customerName || (data.customer && data.customer.name) || (data.tableNumber ? `Mesa ${data.tableNumber}` : 'Cliente');
+    const type = data.type || (data.tableNumber ? `Mesa ${data.tableNumber}` : (data.isPos ? 'Salón / POS' : 'Delivery'));
+    const totalAmount = Number(data.totalAmount || 0).toFixed(2);
 
     this.toastService.info(
-      `Nuevo pedido #${orderId}${tableInfo} recibido`, 
-      '¡ALERTA DE PEDIDO!',
+      `¡Nuevo pedido recibido! #${id} - ${customerName} (${type}) - Total: S/ ${totalAmount}`, 
+      '¡NUEVO PEDIDO!',
       { 
         timeOut: 10000, 
         progressBar: true,
@@ -74,13 +84,17 @@ export class LayoutComponent implements OnInit, OnDestroy {
       }
     );
     
+    // Reproducir sonido de alerta suave para el personal
+    this.pusherService.playSoftNotificationSound();
+
     // Añadir a la lista local de notificaciones
     this.notifications.update(prev => [data, ...prev].slice(0, 5));
     
-    try {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.play().catch(() => {});
-    } catch (e) {}
+    // Notificación Push nativa del navegador
+    this.tableMapService.showBrowserPushNotification(`🍗 ¡Nuevo pedido recibido! #${id}`, {
+      body: `${customerName} (${type}) - Total: S/ ${totalAmount}`,
+      tag: `order-${id}`
+    });
   }
 
   toggleSidebar() {

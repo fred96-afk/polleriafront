@@ -22,6 +22,7 @@ import { AdminUsersComponent } from './features/admin/admin-users.component';
 import { AdminEmpleadosComponent } from './features/admin/admin-empleados.component';
 import { AdminReportsComponent } from './features/admin/admin-reports.component';
 import { AdminDashboardComponent } from './features/admin/admin-dashboard.component';
+import { AdminTablesComponent } from './features/admin/admin-tables.component';
 import { adminDashboardGuard, internalAccessGuard, posGuard } from './guards/role.guard';
 
 export const routes: Routes = [
@@ -58,6 +59,7 @@ export const routes: Routes = [
           { path: 'users', component: AdminUsersComponent },
           { path: 'empleados', component: AdminEmpleadosComponent },
           { path: 'clients', component: AdminClientsComponent },
+          { path: 'tables', component: AdminTablesComponent },
           { path: 'orders', component: AdminOrdersComponent },
           { path: 'reports', component: AdminReportsComponent },
           { path: '', redirectTo: 'summary', pathMatch: 'full' }

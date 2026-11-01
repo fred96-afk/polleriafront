@@ -1,30 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { enviroment } from '../../enviroments/enviroments.development';
-import { AuthResponse, LoginRequest, UserRequest, ForgotPasswordRequest, ResetPasswordRequest } from '../models/auth.model';
-import { Observable, tap } from 'rxjs';
-import { jwtDecode } from 'jwt-decode';
-
-interface UserToken {
-  // Claves comunes en tokens JWT de .NET
-  nameid?: string;
-  sub?: string;
-  id?: string;
-  unique_name?: string;
-  given_name?: string;
-  name?: string;
-  roleId?: string | number;
-  RoleId?: string | number;
-  'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'?: string;
-  email?: string;
-  'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'?: string;
-  'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'?: string;
-  'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'?: string;
-  role?: string;
-  Role?: string;
-  'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'?: string;
-  [key: string]: any;
-}
+import { AuthResponse, LoginRequest, UserRequest, ForgotPasswordRequest, ResetPasswordRequest, AuthUser } from '../models/auth.model';
+import { Observable, tap, catchError, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -32,19 +10,25 @@ interface UserToken {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${enviroment.backenbaseurl}/api/Auth`;
-  
-  private token = signal<string | null>(localStorage.getItem('token'));
-  
-  currentUser = computed(() => {
-    const t = this.token();
-    if (!t || t === 'undefined' || t === 'null') return null;
+
+  private getStoredUser(): AuthUser | null {
+    // Si existía un token previo en localStorage de versiones anteriores, se remueve
+    if (localStorage.getItem('token')) {
+      localStorage.removeItem('token');
+    }
+    const raw = localStorage.getItem('auth_user');
+    if (!raw) return null;
     try {
-      return jwtDecode<UserToken>(t);
-    } catch (e) {
-      console.error('Error decodificando token:', e);
+      return JSON.parse(raw);
+    } catch {
+      localStorage.removeItem('auth_user');
       return null;
     }
-  });
+  }
+
+  private userState = signal<AuthUser | null>(this.getStoredUser());
+
+  currentUser = computed(() => this.userState());
 
   private parseNumericClaim(value: unknown): number | null {
     if (typeof value === 'number' && Number.isFinite(value)) {
@@ -63,10 +47,9 @@ export class AuthService {
     const user = this.currentUser();
     if (!user) return null;
 
-    const role = user['role'] || 
+    const role = user.role || 
                  user['Role'] || 
-                 user['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ||
-                 user['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'];
+                 user['roleName'];
 
     return typeof role === 'string' && role.trim() !== '' ? role.trim() : null;
   }
@@ -75,19 +58,15 @@ export class AuthService {
     const user = this.currentUser();
     if (!user) return 'Usuario';
 
-    const candidateName = user['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
-      user['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'] ||
-      user.name ||
-      user.unique_name ||
-      user.given_name;
+    const candidateName = user.name ||
+      user['unique_name'] ||
+      user['given_name'];
 
     if (typeof candidateName === 'string' && candidateName.trim() !== '') {
       return candidateName.trim();
     }
 
-    const candidateEmail = user['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
-      user.email;
-
+    const candidateEmail = user.email;
     if (typeof candidateEmail === 'string' && candidateEmail.includes('@')) {
       return candidateEmail.split('@')[0];
     }
@@ -99,12 +78,8 @@ export class AuthService {
     const user = this.currentUser();
     if (!user) return null;
 
-    const candidateEmail = user['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
-      user.email ||
-      user.sub;
-
-    return typeof candidateEmail === 'string' && candidateEmail.trim() !== ''
-      ? candidateEmail.trim()
+    return typeof user.email === 'string' && user.email.trim() !== ''
+      ? user.email.trim()
       : null;
   }
 
@@ -112,33 +87,15 @@ export class AuthService {
     const user = this.currentUser();
     if (!user) return null;
 
-    const rawRoleId = user['roleId'] ?? 
-                      user['RoleId'] ?? 
-                      user['roleid'] ??
-                      user['http://schemas.microsoft.com/ws/2008/06/identity/claims/roleid'];
-
-    if (typeof rawRoleId === 'number' && Number.isFinite(rawRoleId)) {
-      return rawRoleId;
-    }
-
-    if (typeof rawRoleId === 'string' && rawRoleId.trim() !== '') {
-      const parsed = Number(rawRoleId);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-
-    return null;
+    const rawRoleId = user.roleId ?? user['RoleId'] ?? user['roleid'];
+    return this.parseNumericClaim(rawRoleId);
   }
 
   get userId(): number | null {
     const user = this.currentUser();
     if (!user) return null;
 
-    const rawId = user['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ||
-                  user['nameid'] || 
-                  user['id'] ||
-                  user['Id'] ||
-                  user['sub'];
-
+    const rawId = user.id ?? user['Id'] ?? user['userId'];
     return this.parseNumericClaim(rawId);
   }
 
@@ -149,20 +106,19 @@ export class AuthService {
       return null;
     }
 
-    const rawClientId = user['clientId'] ??
-                        user['ClientId'] ??
-                        user['clientid'] ??
-                        user['http://schemas.microsoft.com/ws/2008/06/identity/claims/userdata'];
-
+    const rawClientId = user.clientId ?? user['ClientId'] ?? user['clientid'];
     return this.parseNumericClaim(rawClientId);
   }
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, request).pipe(
       tap(response => {
-        if (response.token) {
-          this.setToken(response.token);
-        }
+        const user: AuthUser = response.user || {
+          email: request.email,
+          role: response.role,
+          permissions: response.permissions
+        };
+        this.setUser(user);
       })
     );
   }
@@ -170,9 +126,12 @@ export class AuthService {
   adminLogin(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/adminlogin`, request).pipe(
       tap(response => {
-        if (response.token) {
-          this.setToken(response.token);
-        }
+        const user: AuthUser = response.user || {
+          email: request.email,
+          role: response.role,
+          permissions: response.permissions
+        };
+        this.setUser(user);
       })
     );
   }
@@ -196,17 +155,35 @@ export class AuthService {
   }
 
   logout() {
+    this.http.post(`${this.apiUrl}/logout`, {}).subscribe({
+      next: () => {},
+      error: (e) => console.warn('Error al notificar logout al servidor', e)
+    });
+    this.setUser(null);
     localStorage.removeItem('token');
-    this.token.set(null);
   }
 
-  private setToken(token: string) {
-    localStorage.setItem('token', token);
-    this.token.set(token);
+  checkAuth(): Observable<AuthUser | null> {
+    return this.http.get<AuthUser>(`${this.apiUrl}/me`).pipe(
+      tap(user => this.setUser(user)),
+      catchError(() => {
+        this.setUser(null);
+        return of(null);
+      })
+    );
+  }
+
+  private setUser(user: AuthUser | null) {
+    if (user) {
+      localStorage.setItem('auth_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('auth_user');
+    }
+    this.userState.set(user);
   }
 
   isAuthenticated(): boolean {
-    return !!this.token();
+    return !!this.userState();
   }
 
   isAdministrator(): boolean {
@@ -232,7 +209,6 @@ export class AuthService {
   }
 
   canAccessPos(): boolean {
-    // Permitir acceso al POS tanto a mozos como a administradores
     return this.isWaiter() || this.isAdministrator();
   }
 }

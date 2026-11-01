@@ -3,14 +3,49 @@
   <header class="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
     <div class="space-y-1">
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600">
+        <div class="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 shadow-inner">
           <span class="material-icons-outlined text-3xl">analytics</span>
         </div>
-        <h1 class="text-3xl font-black text-gray-900 tracking-tighter uppercase">Reportes de Ventas</h1>
+        <div>
+          <h1 class="text-3xl font-black text-gray-900 tracking-tighter uppercase">Reportes de Ventas</h1>
+          <p class="text-xs font-semibold text-gray-500">Generación asíncrona en segundo plano con RabbitMQ y avisos vía Pusher</p>
+        </div>
       </div>
-      <p class="text-gray-500 font-medium italic ml-15">Analiza el rendimiento de tu pollería en tiempo real</p>
+    </div>
+
+    <!-- Indicador de Canal Pusher -->
+    <div class="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-2xl border border-emerald-200 text-xs font-black uppercase tracking-wider">
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span>Pusher en vivo (Canal: reports)</span>
     </div>
   </header>
+
+  <!-- Estado: Trabajos procesando en segundo plano -->
+  @if (activeJobs().length > 0) {
+    <div class="max-w-4xl mx-auto space-y-3">
+      @for (job of activeJobs(); track job.jobId) {
+        <div class="bg-amber-50 border-2 border-amber-300 rounded-3xl p-6 shadow-md flex items-center gap-4 animate-pulse">
+          <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0">
+            <div class="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-amber-900 uppercase tracking-tight">
+                Generando reporte {{ job.reportType }} en segundo plano...
+              </h3>
+              <span class="text-[10px] font-black uppercase tracking-widest text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200">
+                En cola RabbitMQ
+              </span>
+            </div>
+            <p class="text-xs text-amber-800 font-medium mt-1">
+              El reporte para el periodo <strong>{{ job.startDate }}</strong> al <strong>{{ job.endDate }}</strong> se está procesando. 
+              <strong>Puedes cambiar de página o cerrar esta pestaña;</strong> recibirás una alerta con enlace de descarga en cuanto finalice.
+            </p>
+          </div>
+        </div>
+      }
+    </div>
+  }
 
   <!-- Report Generator Card -->
   <div class="max-w-4xl mx-auto">
@@ -21,7 +56,7 @@
           <p class="text-sm text-gray-400 font-bold uppercase tracking-widest">Selecciona el periodo que deseas exportar</p>
         </div>
 
-        <form [formGroup]="reportForm" class="space-y-10">
+        <form [formGroup]="reportForm" class="space-y-8">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Start Date -->
             <div class="space-y-3">
@@ -50,45 +85,149 @@
             </div>
           </div>
 
-          <div class="flex flex-col sm:flex-row gap-6 pt-4">
-            <!-- PDF Button -->
-            <button 
-              type="button"
-              (click)="downloadPdf()"
-              [disabled]="reportForm.invalid || loadingPdf()"
-              class="flex-1 bg-gray-900 text-white py-6 rounded-[28px] font-black hover:bg-red-600 transition-all shadow-2xl shadow-gray-200 flex items-center justify-center gap-4 group active:scale-95 disabled:opacity-50 uppercase tracking-widest text-xs"
-            >
-              @if (loadingPdf()) {
-                <div class="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Generando...</span>
-              } @else {
-                <span class="material-icons-outlined text-2xl group-hover:scale-110 transition-transform">picture_as_pdf</span>
-                Descargar Reporte PDF
-              }
-            </button>
+          <!-- Botones Principales: Generación Asíncrona en Segundo Plano -->
+          <div class="pt-2 space-y-3">
+            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400 block text-center">
+              Generar en segundo plano con RabbitMQ & Notificación Pusher:
+            </span>
+            <div class="flex flex-col sm:flex-row gap-4">
+              <!-- Botón Excel Asíncrono -->
+              <button 
+                type="button"
+                (click)="generateAsyncExcel()"
+                [disabled]="reportForm.invalid"
+                class="flex-1 bg-green-600 text-white py-5 px-6 rounded-[24px] font-black hover:bg-green-700 transition-all shadow-xl shadow-green-100 flex items-center justify-center gap-3 group active:scale-95 disabled:opacity-50 uppercase tracking-wider text-xs"
+              >
+                <span class="material-icons-outlined text-xl group-hover:scale-110 transition-transform">table_view</span>
+                <span>Generar Excel (Segundo Plano)</span>
+              </button>
 
-            <!-- Excel Button -->
+              <!-- Botón PDF Asíncrono -->
+              <button 
+                type="button"
+                (click)="generateAsyncPdf()"
+                [disabled]="reportForm.invalid"
+                class="flex-1 bg-gray-900 text-white py-5 px-6 rounded-[24px] font-black hover:bg-gray-800 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-3 group active:scale-95 disabled:opacity-50 uppercase tracking-wider text-xs"
+              >
+                <span class="material-icons-outlined text-xl group-hover:scale-110 transition-transform">picture_as_pdf</span>
+                <span>Generar PDF (Segundo Plano)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Opciones Alternativas de Descarga Síncrona Directa -->
+          <div class="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-center gap-4">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Otras opciones:</span>
             <button 
-              type="button"
-              (click)="downloadExcel()"
-              [disabled]="reportForm.invalid || loadingExcel()"
-              class="flex-1 bg-green-600 text-white py-6 rounded-[28px] font-black hover:bg-green-700 transition-all shadow-2xl shadow-green-100 flex items-center justify-center gap-4 group active:scale-95 disabled:opacity-50 uppercase tracking-widest text-xs"
+              type="button" 
+              (click)="downloadExcelDirect()" 
+              [disabled]="reportForm.invalid || loadingExcel.value"
+              class="text-xs font-bold text-green-700 hover:text-green-800 hover:underline flex items-center gap-1 disabled:opacity-50"
             >
-              @if (loadingExcel()) {
-                <div class="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Generando...</span>
-              } @else {
-                <span class="material-icons-outlined text-2xl group-hover:scale-110 transition-transform">table_view</span>
-                Descargar Reporte EXCEL
-              }
+              <span class="material-icons-outlined text-sm">download</span> 
+              <span>Descarga Excel Directa</span>
+            </button>
+            <span class="text-gray-300">•</span>
+            <button 
+              type="button" 
+              (click)="downloadPdfDirect()" 
+              [disabled]="reportForm.invalid || loadingPdf.value"
+              class="text-xs font-bold text-gray-700 hover:text-gray-900 hover:underline flex items-center gap-1 disabled:opacity-50"
+            >
+              <span class="material-icons-outlined text-sm">download</span> 
+              <span>Descarga PDF Directa</span>
             </button>
           </div>
         </form>
       </div>
 
+      <!-- Historial de Reportes Generados Listos para Descargar -->
+      <div class="bg-gray-50 p-6 md:p-8 border-t border-gray-100 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="material-icons-outlined text-green-600 text-lg">check_circle</span>
+            <h3 class="text-xs font-black text-gray-700 uppercase tracking-wider">
+              Reportes Disponibles para Descargar ({{ completedReports().length }})
+            </h3>
+          </div>
+          <button 
+            type="button" 
+            (click)="refreshHistory()"
+            [disabled]="isLoadingHistory()"
+            class="text-[11px] font-bold text-gray-500 hover:text-orange-600 flex items-center gap-1 uppercase transition-colors"
+          >
+            <span class="material-icons-outlined text-sm" [class.animate-spin]="isLoadingHistory()">refresh</span>
+            <span>Actualizar</span>
+          </button>
+        </div>
+
+        @if (completedReports().length > 0) {
+          <div class="space-y-2.5">
+            @for (report of completedReports(); track report.fileName) {
+              <div class="bg-white p-4 rounded-2xl border border-gray-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-gray-300 transition-colors">
+                <div class="flex items-center gap-3">
+                  <div 
+                    [class.bg-green-100]="report.reportType === 'Excel'"
+                    [class.text-green-700]="report.reportType === 'Excel'"
+                    [class.bg-red-100]="report.reportType !== 'Excel'"
+                    [class.text-red-700]="report.reportType !== 'Excel'"
+                    class="w-10 h-10 rounded-xl flex items-center justify-center font-black flex-shrink-0"
+                  >
+                    <span class="material-icons-outlined text-xl">
+                      {{ report.reportType === 'Excel' ? 'table_view' : 'picture_as_pdf' }}
+                    </span>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-black text-gray-800 uppercase leading-tight">{{ report.fileName }}</h4>
+                    <p class="text-[10px] font-semibold text-gray-500 flex items-center gap-2 mt-0.5">
+                      <span>{{ report.reportType }}</span>
+                      @if (report.fileSize) {
+                        <span>•</span>
+                        <span>{{ (report.fileSize / 1024).toFixed(1) }} KB</span>
+                      }
+                      @if (report.createdAt) {
+                        <span>•</span>
+                        <span>{{ report.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 self-end sm:self-auto">
+                  <button 
+                    type="button"
+                    (click)="triggerDownload(report.downloadUrl, report.fileName)"
+                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span class="material-icons-outlined text-sm">download</span>
+                    <span>Descargar</span>
+                  </button>
+                  <button 
+                    type="button"
+                    (click)="deleteReport(report.fileName)"
+                    title="Eliminar archivo del servidor"
+                    class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                  >
+                    <span class="material-icons-outlined text-sm">delete_outline</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="text-center py-8 text-gray-400">
+            <span class="material-icons-outlined text-3xl mb-1 text-gray-300">folder_open</span>
+            <p class="text-xs font-bold uppercase tracking-wider">No hay reportes disponibles en este momento</p>
+            <p class="text-[11px] text-gray-400 mt-1">Genera uno usando los botones superiores; se creará en segundo plano.</p>
+          </div>
+        }
+      </div>
+
       <!-- Info Footer -->
-      <div class="bg-gray-50 p-6 border-t border-gray-100 text-center">
-        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Los reportes incluyen detalles de productos, clientes y totales del periodo seleccionado.</p>
+      <div class="bg-gray-50/80 p-5 border-t border-gray-100 text-center">
+        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
+          Las solicitudes se encolan en <code class="text-orange-600 font-mono">RabbitMQ</code> y las notificaciones se entregan vía <code class="text-orange-600 font-mono">Pusher</code> (canal: reports).
+        </p>
       </div>
     </div>
   </div>

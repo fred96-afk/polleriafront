@@ -1,10 +1,13 @@
 <div class="min-h-screen bg-gray-50 flex flex-col md:flex-row">
   <!-- Top Header for Mobile -->
   <header class="md:hidden flex items-center justify-between p-4 bg-orange-700 text-white shadow-md sticky top-0 z-40">
-    <div class="text-xl font-bold">El Gigante</div>
-    <button (click)="toggleSidebar()" class="p-2 focus:outline-none focus:ring-2 focus:ring-orange-400 rounded-md">
-      <span class="material-icons-outlined">menu</span>
-    </button>
+    <div class="text-xl font-bold tracking-tight">El Gigante</div>
+    <div class="flex items-center gap-2">
+      <app-notification-bell [isMobile]="true"></app-notification-bell>
+      <button (click)="toggleSidebar()" class="p-2 focus:outline-none focus:ring-2 focus:ring-orange-400 rounded-md" aria-label="Abrir menú">
+        <span class="material-icons-outlined">menu</span>
+      </button>
+    </div>
   </header>
 
   <!-- Overlay for Mobile Sidebar -->
@@ -92,14 +95,38 @@
           <span class="material-icons-outlined mr-3 text-orange-200 group-hover:text-white transition-colors">people</span> 
           <span class="font-medium">Clientes</span>
         </a>
+        <a routerLink="/admin/dashboard/tables" routerLinkActive="bg-orange-600 shadow-md" (click)="closeSidebar()" class="flex items-center p-3 hover:bg-orange-600 rounded-lg transition-colors group">
+          <span class="material-icons-outlined mr-3 text-orange-200 group-hover:text-white transition-colors">table_restaurant</span> 
+          <span class="font-medium">Mesas y Planos</span>
+        </a>
         <a routerLink="/admin/dashboard/orders" routerLinkActive="bg-orange-600 shadow-md" (click)="closeSidebar()" class="flex items-center p-3 hover:bg-orange-600 rounded-lg transition-colors group">
           <span class="material-icons-outlined mr-3 text-orange-200 group-hover:text-white transition-colors">receipt_long</span> 
           <span class="font-medium">Órdenes</span>
         </a>
-        <a routerLink="/admin/dashboard/reports" routerLinkActive="bg-orange-600 shadow-md" (click)="closeSidebar()" class="flex items-center p-3 hover:bg-orange-600 rounded-lg transition-colors group">
-          <span class="material-icons-outlined mr-3 text-orange-200 group-hover:text-white transition-colors">analytics</span> 
-          <span class="font-medium">Reportes</span>
+        <a routerLink="/admin/dashboard/reports" routerLinkActive="bg-orange-600 shadow-md" (click)="closeSidebar()" class="flex items-center justify-between p-3 hover:bg-orange-600 rounded-lg transition-colors group">
+          <div class="flex items-center">
+            <span class="material-icons-outlined mr-3 text-orange-200 group-hover:text-white transition-colors">analytics</span> 
+            <span class="font-medium">Reportes</span>
+          </div>
+          @if (reportService.isGenerating()) {
+            <span class="flex h-2.5 w-2.5 relative" title="Generando reporte en segundo plano...">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-300"></span>
+            </span>
+          }
         </a>
+
+        <button type="button" (click)="notificationService.openModal(); closeSidebar()" class="flex items-center justify-between p-3 hover:bg-orange-600 rounded-lg transition-colors group w-full text-left">
+          <div class="flex items-center">
+            <span class="material-icons-outlined mr-3 text-orange-200 group-hover:text-white transition-colors">format_list_bulleted</span> 
+            <span class="font-medium">Notificaciones</span>
+          </div>
+          @if (notificationService.unreadCount() > 0) {
+            <span class="bg-red-500 text-white font-black text-[10px] px-2 py-0.5 rounded-full shadow-xs animate-pulse">
+              {{ notificationService.unreadCount() }}
+            </span>
+          }
+        </button>
       }
 
       <div class="mt-auto pt-10 pb-4">
@@ -113,6 +140,36 @@
 
   <!-- Main Content Area -->
   <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <!-- Desktop Top Header with Notifications and System Info -->
+    <header class="hidden md:flex items-center justify-between bg-white px-8 py-3.5 border-b border-gray-200 shadow-xs sticky top-0 z-30">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs font-black text-gray-500 uppercase tracking-widest">Sistema En Línea</span>
+        </div>
+        <span class="text-gray-300">|</span>
+        <span class="text-xs font-black text-orange-700 uppercase tracking-wider">Pollería El Gigante</span>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Ícono de Notificaciones del Sistema -->
+        <app-notification-bell></app-notification-bell>
+
+        <div class="h-6 w-px bg-gray-200"></div>
+
+        <!-- Usuario Conectado -->
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center text-orange-700 font-black shadow-inner">
+            {{ authService.displayName.charAt(0).toUpperCase() }}
+          </div>
+          <div class="flex flex-col text-left">
+            <span class="text-xs font-black text-gray-800 leading-tight">{{ authService.displayName }}</span>
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{{ authService.roleName || 'Personal' }}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
     <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 md:p-8 lg:p-10">
       <div class="max-w-7xl mx-auto">
         <router-outlet></router-outlet>

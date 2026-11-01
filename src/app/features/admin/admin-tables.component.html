@@ -1,0 +1,1055 @@
+<div class="space-y-6">
+  <!-- ========================================== -->
+  <!-- BARRA SUPERIOR: RESUMEN Y CONTROLES        -->
+  <!-- ========================================== -->
+  <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center shadow-inner">
+          <span class="material-icons-outlined text-2xl">table_restaurant</span>
+        </div>
+        <div>
+          <h2 class="text-2xl font-black text-gray-800 tracking-tight uppercase">Mesas, Sillas y Mapa del Local</h2>
+          <p class="text-xs font-semibold text-gray-500">
+            Control de mesas con número de sillas, ubicación física en el restaurante y distribución en el mapa interactivo
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Indicador / Activador de Notificaciones Push -->
+      <button 
+        type="button" 
+        (click)="requestPushPermissions()"
+        [class.bg-emerald-50]="tableMapService.pushPermission() === 'granted'"
+        [class.border-emerald-200]="tableMapService.pushPermission() === 'granted'"
+        [class.text-emerald-700]="tableMapService.pushPermission() === 'granted'"
+        [class.bg-amber-50]="tableMapService.pushPermission() !== 'granted'"
+        [class.border-amber-200]="tableMapService.pushPermission() !== 'granted'"
+        [class.text-amber-800]="tableMapService.pushPermission() !== 'granted'"
+        class="px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-2 hover:shadow-sm transition-all"
+        title="Configurar Notificaciones Push del Navegador"
+      >
+        <span class="material-icons-outlined text-base">
+          {{ tableMapService.pushPermission() === 'granted' ? 'notifications_active' : 'notifications_none' }}
+        </span>
+        <span>
+          {{ tableMapService.pushPermission() === 'granted' ? 'Push Activo' : 'Activar Push' }}
+        </span>
+      </button>
+
+      <!-- Botón Probar Push -->
+      <button 
+        type="button" 
+        (click)="openPushTester()"
+        class="px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+      >
+        <span class="material-icons-outlined text-base">send</span>
+        <span>Probar Alerta</span>
+      </button>
+
+      <!-- Toggle Modo Diseñador -->
+      <button 
+        type="button" 
+        (click)="isDesignerMode.set(!isDesignerMode())"
+        [class.bg-indigo-600]="isDesignerMode()"
+        [class.text-white]="isDesignerMode()"
+        [class.shadow-md]="isDesignerMode()"
+        [class.bg-gray-100]="!isDesignerMode()"
+        [class.text-gray-700]="!isDesignerMode()"
+        class="px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all"
+      >
+        <span class="material-icons-outlined text-base">
+          {{ isDesignerMode() ? 'lock_open' : 'drag_indicator' }}
+        </span>
+        <span>{{ isDesignerMode() ? 'Mover Mesas: ON' : 'Diseñar Plano' }}</span>
+      </button>
+
+      <!-- Nueva Mesa -->
+      <button 
+        type="button" 
+        (click)="openCreateTableModal()"
+        class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm transition-all"
+      >
+        <span class="material-icons-outlined text-base">add</span>
+        <span>Nueva Mesa</span>
+      </button>
+
+      <!-- Opciones / Reset -->
+      <button 
+        type="button" 
+        (click)="resetLayout()"
+        title="Restaurar planos y mesas por defecto"
+        class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+      >
+        <span class="material-icons-outlined text-lg">restart_alt</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- STATS RÁPIDAS: MESAS Y SILLAS DEL LOCAL   -->
+  <!-- ========================================== -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <!-- Total Mesas -->
+    <div class="bg-white p-3.5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gray-100 text-gray-700 flex items-center justify-center font-black">
+        {{ tableMapService.tableStats().total }}
+      </div>
+      <div>
+        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block leading-tight">Total Mesas</span>
+        <span class="text-xs font-black text-gray-800">En todo el local</span>
+      </div>
+    </div>
+
+    <!-- Total Sillas -->
+    <div class="bg-white p-3.5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-3 bg-gradient-to-br from-amber-50/40 to-white">
+      <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
+        <span class="material-icons-outlined text-lg">chair</span>
+      </div>
+      <div>
+        <span class="text-[10px] font-bold text-amber-600 uppercase tracking-widest block leading-tight">Total Sillas</span>
+        <span class="text-xs font-black text-amber-800">{{ totalChairsInVenue() }} Sillas en salón</span>
+      </div>
+    </div>
+
+    <!-- Libres -->
+    <div class="bg-white p-3.5 rounded-2xl border border-emerald-100 shadow-sm flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
+        {{ tableMapService.tableStats().available }}
+      </div>
+      <div>
+        <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest block leading-tight">Libres</span>
+        <span class="text-xs font-black text-emerald-700">Listas para pedir</span>
+      </div>
+    </div>
+
+    <!-- Ocupadas -->
+    <div class="bg-white p-3.5 rounded-2xl border border-orange-100 shadow-sm flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center font-black">
+        {{ tableMapService.tableStats().occupied }}
+      </div>
+      <div>
+        <span class="text-[10px] font-bold text-orange-600 uppercase tracking-widest block leading-tight">Ocupadas</span>
+        <span class="text-xs font-black text-orange-700">Comensales activos</span>
+      </div>
+    </div>
+
+    <!-- Pidiendo Cuenta -->
+    <div class="bg-white p-3.5 rounded-2xl border border-yellow-100 shadow-sm flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
+        {{ tableMapService.tableStats().billing }}
+      </div>
+      <div>
+        <span class="text-[10px] font-bold text-amber-600 uppercase tracking-widest block leading-tight">Pidiendo Cuenta</span>
+        <span class="text-xs font-black text-amber-700">Por cobrar</span>
+      </div>
+    </div>
+
+    <!-- Llamando Mozo -->
+    <div class="bg-white p-3.5 rounded-2xl border border-purple-100 shadow-sm flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">
+        {{ tableMapService.tableStats().calling }}
+      </div>
+      <div>
+        <span class="text-[10px] font-bold text-purple-600 uppercase tracking-widest block leading-tight">Llamando Mozo</span>
+        <span class="text-xs font-black text-purple-700">Atención urgente</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- SELECTOR DE PLANOS / SECTORES DEL LOCAL   -->
+  <!-- ========================================== -->
+  <div class="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-wrap items-center justify-between gap-3">
+    <!-- Pestañas de Planos -->
+    <div class="flex flex-wrap items-center gap-2">
+      @for (map of tableMapService.maps(); track map.id) {
+        <div class="flex items-center">
+          <button 
+            type="button"
+            (click)="selectMap(map.id)"
+            [class.bg-orange-600]="tableMapService.activeMapId() === map.id"
+            [class.text-white]="tableMapService.activeMapId() === map.id"
+            [class.shadow-md]="tableMapService.activeMapId() === map.id"
+            [class.bg-gray-100]="tableMapService.activeMapId() !== map.id"
+            [class.text-gray-700]="tableMapService.activeMapId() !== map.id"
+            [class.hover:bg-gray-200]="tableMapService.activeMapId() !== map.id"
+            class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all"
+          >
+            <span class="material-icons-outlined text-base">{{ map.icon || 'table_restaurant' }}</span>
+            <span>{{ map.name }}</span>
+            @if (tableMapService.activeMapId() === map.id) {
+              <span class="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {{ activeMapTotalChairs() }} sillas
+              </span>
+            }
+          </button>
+
+          <!-- Acciones del plano activo -->
+          @if (tableMapService.activeMapId() === map.id) {
+            <button 
+              type="button" 
+              (click)="openEditMapModal(map)"
+              title="Editar sector"
+              class="ml-1 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <span class="material-icons-outlined text-sm">edit</span>
+            </button>
+            @if (tableMapService.maps().length > 1) {
+              <button 
+                type="button" 
+                (click)="deleteMap(map)"
+                title="Eliminar sector"
+                class="p-1.5 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <span class="material-icons-outlined text-sm">delete</span>
+              </button>
+            }
+          }
+        </div>
+      }
+
+      <!-- Botón Agregar Nuevo Plano -->
+      <button 
+        type="button"
+        (click)="openCreateMapModal()"
+        class="px-3 py-2 border-2 border-dashed border-gray-200 hover:border-orange-500 hover:text-orange-600 text-gray-500 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all"
+      >
+        <span class="material-icons-outlined text-base">add</span>
+        <span>Agregar Sector</span>
+      </button>
+    </div>
+
+    <!-- Ayuda de Diseñador / Leyenda -->
+    @if (isDesignerMode()) {
+      <div class="flex items-center gap-2 text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-100 text-xs font-semibold animate-pulse">
+        <span class="material-icons-outlined text-base">pan_tool</span>
+        <span>Haz clic y arrastra cualquier mesa sobre el plano para reubicarla. Los cambios se guardan automáticamente.</span>
+      </div>
+    } @else {
+      <div class="flex items-center gap-3 text-xs font-bold text-gray-500">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Libre</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-orange-600 inline-block"></span> Ocupada</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-purple-600 inline-block"></span> ¡Mozo!</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Cuenta</span>
+      </div>
+    }
+  </div>
+
+  <!-- ========================================== -->
+  <!-- LIENZO VISUAL DEL PLANO 2D (CANVAS)       -->
+  <!-- ========================================== -->
+  <div 
+    #canvasContainer
+    (mousemove)="onCanvasMouseMove($event)"
+    (mouseup)="stopDrag()"
+    (mouseleave)="stopDrag()"
+    (touchmove)="onCanvasMouseMove($event)"
+    (touchend)="stopDrag()"
+    class="relative w-full h-[640px] bg-gradient-to-br from-amber-50/20 via-white to-gray-50 rounded-3xl border-2 border-dashed border-gray-200 overflow-hidden shadow-inner select-none transition-all"
+    [class.cursor-grab]="isDesignerMode() && !draggingTableId()"
+    [class.cursor-grabbing]="draggingTableId()"
+  >
+    <!-- Fondo con rejilla arquitectónica del local -->
+    <div 
+      class="absolute inset-0 opacity-[0.25] pointer-events-none"
+      style="background-image: radial-gradient(#d97706 1px, transparent 1px); background-size: 28px 28px;"
+    ></div>
+
+    <!-- PUNTOS DE REFERENCIA FÍSICOS DEL LOCAL -->
+    <!-- 1. Acceso Principal / Entrada -->
+    <div class="absolute top-4 left-6 pointer-events-none flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-800 bg-emerald-50/90 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-emerald-200 shadow-sm">
+      <span class="material-icons-outlined text-sm text-emerald-600">meeting_room</span>
+      <span>Acceso Principal / Entrada</span>
+    </div>
+
+    <!-- 2. Cocina & Barra de Despacho -->
+    <div class="absolute bottom-4 right-6 pointer-events-none flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-800 bg-red-50/90 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-red-200 shadow-sm">
+      <span class="material-icons-outlined text-sm text-red-600">soup_kitchen</span>
+      <span>Cocina & Barra de Despacho</span>
+    </div>
+
+    <!-- 3. Caja Central / Cobros -->
+    <div class="absolute top-4 right-6 pointer-events-none flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-800 bg-amber-50/90 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-amber-200 shadow-sm">
+      <span class="material-icons-outlined text-sm text-amber-600">point_of_sale</span>
+      <span>Caja Central / POS</span>
+    </div>
+
+    <!-- 4. Baños / SS.HH. -->
+    <div class="absolute bottom-4 left-6 pointer-events-none flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-800 bg-blue-50/90 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-blue-200 shadow-sm">
+      <span class="material-icons-outlined text-sm text-blue-600">wc</span>
+      <span>Servicios Higiénicos</span>
+    </div>
+
+    <!-- 5. Ventanales a la calle -->
+    <div class="absolute top-1/2 left-2 -translate-y-1/2 pointer-events-none flex flex-col items-center gap-1 text-[9px] font-black uppercase tracking-widest text-gray-400 bg-white/70 px-1 py-3 rounded-lg border border-gray-200">
+      <span class="material-icons-outlined text-sm">wb_sunny</span>
+      <span style="writing-mode: vertical-rl;">Ventanales</span>
+    </div>
+
+    <!-- Mesas posicionadas en el Lienzo -->
+    @for (table of tableMapService.activeMapTables(); track table.id) {
+      <div 
+        (mousedown)="startDrag($event, table)"
+        (touchstart)="startDrag($event, table)"
+        [style.left.%]="table.x"
+        [style.top.%]="table.y"
+        class="absolute -translate-x-1/2 -translate-y-1/2 transition-shadow duration-200 group"
+        [class.z-30]="draggingTableId() === table.id"
+        [class.z-10]="draggingTableId() !== table.id"
+      >
+        <!-- ELEMENTO DE LA MESA CON SILLAS REALES DIBUJADAS ALREDEDOR -->
+        <div 
+          [class.rounded-full]="table.shape === 'round'"
+          [class.rounded-2xl]="table.shape === 'square'"
+          [class.rounded-3xl]="table.shape === 'rectangle'"
+          [class.w-32]="table.shape === 'round' || table.shape === 'square'"
+          [class.h-32]="table.shape === 'round' || table.shape === 'square'"
+          [class.w-44]="table.shape === 'rectangle'"
+          [class.h-32]="table.shape === 'rectangle'"
+          [class.bg-emerald-600]="table.status === 'available' || !table.status"
+          [class.text-white]="true"
+          [class.bg-orange-600]="table.status === 'occupied'"
+          [class.bg-purple-600]="table.status === 'calling'"
+          [class.animate-bounce]="table.status === 'calling'"
+          [class.bg-amber-500]="table.status === 'billing'"
+          [class.ring-4]="table.status === 'calling' || table.status === 'billing'"
+          [class.ring-purple-300]="table.status === 'calling'"
+          [class.ring-amber-300]="table.status === 'billing'"
+          [class.shadow-xl]="true"
+          [class.cursor-move]="isDesignerMode()"
+          class="relative flex flex-col items-center justify-center p-2 text-center transition-all hover:scale-105 active:scale-95 border-2 border-white/60 shadow-lg"
+        >
+          <!-- SILLAS REALES RENDERIZADAS ALREDEDOR DE LA MESA SEGÚN SU NÚMERO DE SILLAS -->
+          @for (chair of getChairSlots(table); track chair.id) {
+            <span 
+              class="absolute pointer-events-none transition-all z-0"
+              [ngStyle]="chair.style"
+            >
+              <!-- Silla visual: Respaldo y Asiento elegante -->
+              <span class="block w-4 h-2.5 bg-amber-950/85 rounded-t-sm shadow-sm border border-white/60"></span>
+            </span>
+          }
+
+          <!-- Header de Mesa: Número -->
+          <div class="flex items-center gap-1 leading-none mb-1 z-10">
+            <span class="text-xs font-black uppercase tracking-tight">Mesa {{ table.number }}</span>
+          </div>
+
+          <!-- NÚMERO DE SILLAS EN LA MESA -->
+          <div class="flex items-center gap-1 text-[9px] font-black text-amber-200 bg-black/35 px-2 py-0.5 rounded-full mb-1 shadow-2xs z-10">
+            <span class="material-icons-outlined text-[11px]">chair</span>
+            <span>{{ table.chairs || table.capacity }} Sillas</span>
+          </div>
+
+          <!-- UBICACIÓN FÍSICA EN EL LOCAL -->
+          <div 
+            class="text-[8px] font-bold text-white/90 truncate max-w-[95%] mb-1 leading-tight flex items-center justify-center gap-0.5 z-10"
+            [title]="table.location || 'Salón Principal'"
+          >
+            <span class="material-icons-outlined text-[10px] text-orange-200 shrink-0">place</span>
+            <span class="truncate">{{ table.location || 'Salón Principal' }}</span>
+          </div>
+
+          <!-- Información de Estado / Pedido -->
+          @if (table.status === 'occupied' && table.order) {
+            <div class="bg-black/35 px-2 py-0.5 rounded-lg w-full max-w-[92%] z-10">
+              <span class="text-[10px] font-black block leading-none">S/ {{ table.order.totalAmount.toFixed(2) }}</span>
+              <span class="text-[8px] font-bold opacity-85 block truncate">#{{ table.order.id }} • {{ table.order.details.length }} items</span>
+            </div>
+          } @else if (table.status === 'calling') {
+            <span class="text-[9px] font-black uppercase tracking-wider bg-white text-purple-700 px-1.5 py-0.5 rounded shadow z-10">
+              ¡Mozo!
+            </span>
+          } @else if (table.status === 'billing') {
+            <span class="text-[9px] font-black uppercase tracking-wider bg-white text-amber-800 px-1.5 py-0.5 rounded shadow z-10">
+              Cuenta
+            </span>
+          } @else {
+            <span class="text-[9px] font-black uppercase tracking-wider opacity-90 z-10">
+              Libre
+            </span>
+          }
+
+          <!-- Indicador flotante en esquina -->
+          <span 
+            class="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm z-20"
+            [class.bg-emerald-300]="table.status === 'available' || !table.status"
+            [class.bg-orange-300]="table.status === 'occupied'"
+            [class.bg-purple-300]="table.status === 'calling'"
+            [class.bg-amber-300]="table.status === 'billing'"
+          ></span>
+        </div>
+
+        <!-- Botones de Acción Rápida (Aparecen al pasar el cursor) -->
+        <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-full left-1/2 -translate-x-1/2 mt-1.5 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-gray-100 p-1 flex items-center gap-1 z-40 pointer-events-auto">
+          <button 
+            type="button" 
+            (click)="viewTableDetails(table)"
+            title="Ver detalles de la mesa y ubicación"
+            class="p-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          >
+            <span class="material-icons-outlined text-sm">visibility</span>
+          </button>
+
+          <button 
+            type="button" 
+            (click)="openEditTableModal(table)"
+            title="Editar Mesa y Número de Sillas"
+            class="p-1 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+          >
+            <span class="material-icons-outlined text-sm">edit</span>
+          </button>
+          
+          <button 
+            type="button" 
+            (click)="tableMapService.triggerTableAlert(table.number, 'call_waiter')"
+            title="Simular llamada de mozo"
+            class="p-1 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+          >
+            <span class="material-icons-outlined text-sm">notifications</span>
+          </button>
+
+          <button 
+            type="button" 
+            (click)="tableMapService.triggerTableAlert(table.number, 'request_bill')"
+            title="Simular solicitud de cuenta"
+            class="p-1 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+          >
+            <span class="material-icons-outlined text-sm">receipt</span>
+          </button>
+
+          <button 
+            type="button" 
+            (click)="deleteTable(table)"
+            title="Eliminar Mesa"
+            class="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <span class="material-icons-outlined text-sm">delete</span>
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Si no hay mesas en este plano -->
+    @if (tableMapService.activeMapTables().length === 0) {
+      <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+        <div class="w-16 h-16 rounded-3xl bg-orange-50 text-orange-400 flex items-center justify-center mb-3">
+          <span class="material-icons-outlined text-4xl">table_restaurant</span>
+        </div>
+        <h4 class="font-black text-gray-700 text-lg uppercase tracking-tight">No hay mesas en este sector</h4>
+        <p class="text-xs text-gray-400 max-w-sm mb-4">Comienza creando tu primera mesa con su número de sillas y ubicación física.</p>
+        <button 
+          type="button" 
+          (click)="openCreateTableModal()"
+          class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow transition-all flex items-center gap-1.5"
+        >
+          <span class="material-icons-outlined text-base">add</span>
+          <span>Agregar Mesa al Sector</span>
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- TABLA DETALLADA: LISTADO DE MESAS, SILLAS Y UBICACIÓN FÍSICA   -->
+  <!-- ============================================================== -->
+  <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+      <div>
+        <h3 class="font-black text-lg text-gray-800 uppercase tracking-tight flex items-center gap-2">
+          <span class="material-icons-outlined text-orange-600">format_list_bulleted</span>
+          <span>Mesas del Local (Listado con Sillas y Ubicación)</span>
+        </h3>
+        <p class="text-xs text-gray-500">Consulta y edita los datos de número de sillas y ubicación física por mesa</p>
+      </div>
+
+      <!-- Buscador y filtro por sillas -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="relative">
+          <span class="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
+          <input 
+            type="text" 
+            [(ngModel)]="tableSearchTerm"
+            placeholder="Buscar mesa o ubicación..."
+            class="pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500 w-52"
+          />
+        </div>
+
+        <select 
+          [(ngModel)]="filterChairs"
+          class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        >
+          <option value="all">🪑 Todas las Sillas</option>
+          <option [value]="2">2 Sillas</option>
+          <option [value]="4">4 Sillas</option>
+          <option [value]="6">6 Sillas</option>
+          <option [value]="8">8 Sillas</option>
+          <option [value]="10">10 Sillas</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead>
+          <tr class="text-gray-400 uppercase tracking-wider border-b border-gray-100 text-[10px]">
+            <th class="py-3 px-3">Mesa</th>
+            <th class="py-3 px-3">Número de Sillas</th>
+            <th class="py-3 px-3">Ubicación en el Local</th>
+            <th class="py-3 px-3">Sector / Plano</th>
+            <th class="py-3 px-3">Forma Visual</th>
+            <th class="py-3 px-3">Coordenadas</th>
+            <th class="py-3 px-3">Estado</th>
+            <th class="py-3 px-3 text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          @for (table of filteredTablesList(); track table.id) {
+            <tr class="hover:bg-gray-50/70 transition-colors">
+              <td class="py-3 px-3 font-black text-gray-900">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center font-black text-xs">
+                    {{ table.number }}
+                  </div>
+                  <span>{{ table.name || 'Mesa ' + table.number }}</span>
+                </div>
+              </td>
+
+              <!-- Número de Sillas -->
+              <td class="py-3 px-3">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl font-black text-xs">
+                  <span class="material-icons-outlined text-sm text-amber-600">chair</span>
+                  <span>{{ table.chairs || table.capacity }} Sillas</span>
+                </span>
+              </td>
+
+              <!-- Ubicación Física en el Local -->
+              <td class="py-3 px-3 font-semibold text-gray-700">
+                <div class="flex items-center gap-1.5">
+                  <span class="material-icons-outlined text-sm text-orange-500">place</span>
+                  <span>{{ table.location || 'Salón Principal' }}</span>
+                </div>
+              </td>
+
+              <!-- Sector -->
+              <td class="py-3 px-3">
+                <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md font-bold text-[10px]">
+                  {{ getSectorName(table.mapId) }}
+                </span>
+              </td>
+
+              <!-- Forma -->
+              <td class="py-3 px-3 capitalize font-medium text-gray-600">
+                {{ table.shape === 'round' ? 'Redonda' : (table.shape === 'rectangle' ? 'Rectangular' : 'Cuadrada') }}
+              </td>
+
+              <!-- Coordenadas -->
+              <td class="py-3 px-3 font-mono text-[10px] text-gray-400">
+                X: {{ table.x }}% · Y: {{ table.y }}%
+              </td>
+
+              <!-- Estado -->
+              <td class="py-3 px-3">
+                <span 
+                  class="px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
+                  [class.bg-emerald-100]="table.status === 'available' || !table.status"
+                  [class.text-emerald-700]="table.status === 'available' || !table.status"
+                  [class.bg-orange-100]="table.status === 'occupied'"
+                  [class.text-orange-700]="table.status === 'occupied'"
+                  [class.bg-purple-100]="table.status === 'calling'"
+                  [class.text-purple-700]="table.status === 'calling'"
+                  [class.bg-amber-100]="table.status === 'billing'"
+                  [class.text-amber-700]="table.status === 'billing'"
+                >
+                  {{ table.status === 'occupied' ? 'Ocupada' : (table.status === 'calling' ? '¡Mozo!' : (table.status === 'billing' ? 'Cuenta' : 'Libre')) }}
+                </span>
+              </td>
+
+              <!-- Acciones -->
+              <td class="py-3 px-3 text-right">
+                <div class="inline-flex items-center gap-1">
+                  <button 
+                    (click)="openEditTableModal(table)"
+                    class="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                    title="Editar mesa"
+                  >
+                    <span class="material-icons-outlined text-sm">edit</span>
+                  </button>
+                  <button 
+                    (click)="deleteTable(table)"
+                    class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Eliminar mesa"
+                  >
+                    <span class="material-icons-outlined text-sm">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: CREAR / EDITAR MESA                 -->
+  <!-- ========================================== -->
+  @if (showTableModal()) {
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full border border-gray-100 overflow-hidden transform transition-all">
+        <div class="p-6 bg-orange-600 text-white flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="material-icons-outlined text-2xl">table_restaurant</span>
+            <h3 class="font-black text-lg uppercase tracking-tight">
+              {{ editingTable() ? 'Editar Mesa (Sillas y Ubicación)' : 'Nueva Mesa con Sillas y Ubicación' }}
+            </h3>
+          </div>
+          <button (click)="showTableModal.set(false)" class="text-white/80 hover:text-white">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+
+        <form [formGroup]="tableForm" (ngSubmit)="saveTable()" class="p-6 space-y-4">
+          <!-- Número de Mesa -->
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1">
+              Número / Código de Mesa:
+            </label>
+            <input 
+              type="text" 
+              formControlName="number"
+              placeholder="Ej: 1, 2, T-1, VIP-2"
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 font-bold"
+            />
+            <span class="text-[10px] text-gray-400">Este número es el identificador único para comandas y órdenes.</span>
+          </div>
+
+          <!-- Nombre Descriptivo -->
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1">
+              Nombre Descriptivo:
+            </label>
+            <input 
+              type="text" 
+              formControlName="name"
+              placeholder="Ej: Mesa Familiar Ventana, Mesa Presidencial"
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium"
+            />
+          </div>
+
+          <!-- NÚMERO DE SILLAS EN LA MESA -->
+          <div class="bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80 space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-black text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                <span class="material-icons-outlined text-base text-amber-700">chair</span>
+                <span>Número de Sillas en la Mesa:</span>
+              </label>
+              <span class="text-xs font-black text-amber-700 bg-white px-2.5 py-0.5 rounded-full border border-amber-200">
+                {{ tableForm.get('chairs')?.value }} Sillas
+              </span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <input 
+                type="number" 
+                formControlName="chairs"
+                min="1"
+                max="30"
+                class="w-24 px-4 py-2 rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-black text-xl text-center"
+              />
+              <!-- Botones rápidos de sillas -->
+              <div class="flex flex-wrap items-center gap-1.5 flex-1">
+                <button 
+                  type="button" 
+                  (click)="setChairs(2)"
+                  [class.bg-amber-600]="tableForm.get('chairs')?.value === 2"
+                  [class.text-white]="tableForm.get('chairs')?.value === 2"
+                  class="px-2.5 py-1.5 rounded-xl bg-white text-xs font-black border border-amber-200 hover:bg-amber-100 transition-colors"
+                >
+                  2 Sillas
+                </button>
+                <button 
+                  type="button" 
+                  (click)="setChairs(4)"
+                  [class.bg-amber-600]="tableForm.get('chairs')?.value === 4"
+                  [class.text-white]="tableForm.get('chairs')?.value === 4"
+                  class="px-2.5 py-1.5 rounded-xl bg-white text-xs font-black border border-amber-200 hover:bg-amber-100 transition-colors"
+                >
+                  4 Sillas
+                </button>
+                <button 
+                  type="button" 
+                  (click)="setChairs(6)"
+                  [class.bg-amber-600]="tableForm.get('chairs')?.value === 6"
+                  [class.text-white]="tableForm.get('chairs')?.value === 6"
+                  class="px-2.5 py-1.5 rounded-xl bg-white text-xs font-black border border-amber-200 hover:bg-amber-100 transition-colors"
+                >
+                  6 Sillas
+                </button>
+                <button 
+                  type="button" 
+                  (click)="setChairs(8)"
+                  [class.bg-amber-600]="tableForm.get('chairs')?.value === 8"
+                  [class.text-white]="tableForm.get('chairs')?.value === 8"
+                  class="px-2.5 py-1.5 rounded-xl bg-white text-xs font-black border border-amber-200 hover:bg-amber-100 transition-colors"
+                >
+                  8 Sillas
+                </button>
+                <button 
+                  type="button" 
+                  (click)="setChairs(10)"
+                  [class.bg-amber-600]="tableForm.get('chairs')?.value === 10"
+                  [class.text-white]="tableForm.get('chairs')?.value === 10"
+                  class="px-2.5 py-1.5 rounded-xl bg-white text-xs font-black border border-amber-200 hover:bg-amber-100 transition-colors"
+                >
+                  10 Sillas
+                </button>
+              </div>
+            </div>
+            <p class="text-[10px] text-amber-800/80 font-medium">Define cuántas sillas físicas tiene esta mesa para acomodar a los clientes.</p>
+          </div>
+
+          <!-- UBICACIÓN EN EL LOCAL -->
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+              <span class="material-icons-outlined text-sm text-orange-600">place</span>
+              <span>Ubicación en el Local:</span>
+            </label>
+            <input 
+              type="text" 
+              formControlName="location"
+              placeholder="Ej: Salón Principal - Frente a Entrada, Terraza - Zona Jardín"
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 font-bold"
+            />
+            <span class="text-[10px] text-gray-400">Describe la referencia física en el restaurante (frente a ventana, cerca de cocina, balcón, etc.).</span>
+          </div>
+
+          <!-- Sector / Plano -->
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1">
+              Sector / Plano del Local:
+            </label>
+            <select 
+              formControlName="mapId"
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 font-bold"
+            >
+              @for (map of tableMapService.maps(); track map.id) {
+                <option [value]="map.id">{{ map.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Forma Geométrica -->
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-2">
+              Forma de la Mesa:
+            </label>
+            <div class="grid grid-cols-3 gap-2">
+              <label 
+                [class.border-orange-500]="tableForm.get('shape')?.value === 'square'"
+                [class.bg-orange-50]="tableForm.get('shape')?.value === 'square'"
+                class="p-2.5 border-2 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all hover:border-orange-300"
+              >
+                <input type="radio" formControlName="shape" value="square" class="sr-only">
+                <div class="w-7 h-7 rounded-lg bg-orange-200 border-2 border-orange-600 mb-1"></div>
+                <span class="text-[10px] font-black uppercase text-gray-700">Cuadrada</span>
+              </label>
+
+              <label 
+                [class.border-orange-500]="tableForm.get('shape')?.value === 'round'"
+                [class.bg-orange-50]="tableForm.get('shape')?.value === 'round'"
+                class="p-2.5 border-2 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all hover:border-orange-300"
+              >
+                <input type="radio" formControlName="shape" value="round" class="sr-only">
+                <div class="w-7 h-7 rounded-full bg-orange-200 border-2 border-orange-600 mb-1"></div>
+                <span class="text-[10px] font-black uppercase text-gray-700">Redonda</span>
+              </label>
+
+              <label 
+                [class.border-orange-500]="tableForm.get('shape')?.value === 'rectangle'"
+                [class.bg-orange-50]="tableForm.get('shape')?.value === 'rectangle'"
+                class="p-2.5 border-2 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all hover:border-orange-300"
+              >
+                <input type="radio" formControlName="shape" value="rectangle" class="sr-only">
+                <div class="w-9 h-6 rounded-lg bg-orange-200 border-2 border-orange-600 mb-1"></div>
+                <span class="text-[10px] font-black uppercase text-gray-700">Rectangular</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- VISTA PREVIA EN VIVO DE LA MESA Y SUS SILLAS -->
+          <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col items-center justify-center">
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Vista Previa con Sillas:</span>
+            <div 
+              class="relative flex flex-col items-center justify-center bg-emerald-600 text-white border-2 border-white/60 shadow-md transition-all"
+              [class.rounded-full]="tableForm.get('shape')?.value === 'round'"
+              [class.rounded-2xl]="tableForm.get('shape')?.value === 'square'"
+              [class.rounded-3xl]="tableForm.get('shape')?.value === 'rectangle'"
+              [class.w-28]="tableForm.get('shape')?.value === 'round' || tableForm.get('shape')?.value === 'square'"
+              [class.h-28]="tableForm.get('shape')?.value === 'round' || tableForm.get('shape')?.value === 'square'"
+              [class.w-40]="tableForm.get('shape')?.value === 'rectangle'"
+              [class.h-28]="tableForm.get('shape')?.value === 'rectangle'"
+            >
+              @for (chair of getChairSlots(getModalPreviewTable()); track chair.id) {
+                <span 
+                  class="absolute pointer-events-none"
+                  [ngStyle]="chair.style"
+                >
+                  <span class="block w-3.5 h-2 bg-amber-950/85 rounded-t-sm shadow-xs border border-white/50"></span>
+                </span>
+              }
+              <span class="text-xs font-black uppercase">Mesa {{ tableForm.get('number')?.value || '?' }}</span>
+              <span class="text-[9px] font-bold text-amber-200">{{ tableForm.get('chairs')?.value || 4 }} Sillas</span>
+            </div>
+          </div>
+
+          <!-- Botones -->
+          <div class="pt-4 flex items-center justify-end gap-2 border-t border-gray-100">
+            <button 
+              type="button" 
+              (click)="showTableModal.set(false)"
+              class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              [disabled]="tableForm.invalid"
+              class="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider shadow transition-all"
+            >
+              {{ editingTable() ? 'Guardar Cambios' : 'Crear Mesa' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL: DETALLES DE MESA                    -->
+  <!-- ========================================== -->
+  @if (selectedTableForDetails()) {
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full border border-gray-100 overflow-hidden">
+        <div class="p-6 bg-gray-900 text-white flex justify-between items-center">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center font-black">
+              {{ selectedTableForDetails()!.number }}
+            </div>
+            <div>
+              <h3 class="font-black text-lg uppercase tracking-tight">Mesa {{ selectedTableForDetails()!.number }}</h3>
+              <p class="text-xs text-gray-400">{{ selectedTableForDetails()!.name }}</p>
+            </div>
+          </div>
+          <button (click)="selectedTableForDetails.set(null)" class="text-white/80 hover:text-white">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <!-- Sillas -->
+          <div class="flex items-center justify-between p-3 bg-amber-50 rounded-2xl border border-amber-200">
+            <span class="text-xs font-bold text-amber-900 flex items-center gap-2">
+              <span class="material-icons-outlined text-amber-700">chair</span>
+              <span>Número de Sillas:</span>
+            </span>
+            <span class="font-black text-sm text-amber-900">
+              {{ selectedTableForDetails()!.chairs || selectedTableForDetails()!.capacity }} Sillas
+            </span>
+          </div>
+
+          <!-- Ubicación -->
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100">
+            <span class="text-xs font-bold text-gray-700 flex items-center gap-2">
+              <span class="material-icons-outlined text-orange-600">place</span>
+              <span>Ubicación en el Local:</span>
+            </span>
+            <span class="font-black text-xs text-gray-900 text-right">
+              {{ selectedTableForDetails()!.location || 'Salón Principal' }}
+            </span>
+          </div>
+
+          <!-- Sector -->
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100">
+            <span class="text-xs font-bold text-gray-700 flex items-center gap-2">
+              <span class="material-icons-outlined text-gray-500">layers</span>
+              <span>Sector / Plano:</span>
+            </span>
+            <span class="font-black text-xs text-gray-900">
+              {{ getSectorName(selectedTableForDetails()!.mapId) }}
+            </span>
+          </div>
+
+          <!-- Estado -->
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl border border-gray-100">
+            <span class="text-xs font-bold text-gray-700">Estado Actual:</span>
+            <span class="font-black text-xs uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+              {{ selectedTableForDetails()!.status || 'Libre' }}
+            </span>
+          </div>
+
+          <div class="pt-4 flex justify-end gap-2 border-t border-gray-100">
+            <button 
+              type="button"
+              (click)="openEditTableModal(selectedTableForDetails()!); selectedTableForDetails.set(null)"
+              class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold"
+            >
+              Editar Mesa
+            </button>
+            <button 
+              type="button" 
+              (click)="selectedTableForDetails.set(null)"
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL: CREAR / EDITAR PLANO (SECTOR)       -->
+  <!-- ========================================== -->
+  @if (showMapModal()) {
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full border border-gray-100 overflow-hidden transform transition-all">
+        <div class="p-6 bg-gray-900 text-white flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="material-icons-outlined text-2xl">layers</span>
+            <h3 class="font-black text-lg uppercase tracking-tight">
+              {{ editingMap() ? 'Editar Sector' : 'Nuevo Sector del Local' }}
+            </h3>
+          </div>
+          <button (click)="showMapModal.set(false)" class="text-white/80 hover:text-white">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+
+        <form [formGroup]="mapForm" (ngSubmit)="saveMap()" class="p-6 space-y-4">
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1">
+              Nombre del Sector:
+            </label>
+            <input 
+              type="text" 
+              formControlName="name"
+              placeholder="Ej: Salón Familiar, Terraza, Balcón"
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 font-bold"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1">
+              Descripción:
+            </label>
+            <textarea 
+              formControlName="description"
+              rows="2"
+              placeholder="Ej: Zona climatizada con vista a la calle..."
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+            ></textarea>
+          </div>
+
+          <div class="pt-4 flex items-center justify-end gap-2 border-t border-gray-100">
+            <button 
+              type="button" 
+              (click)="showMapModal.set(false)"
+              class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              [disabled]="mapForm.invalid"
+              class="px-6 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider shadow transition-all"
+            >
+              Guardar Sector
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================== -->
+  <!-- MODAL: TESTER DE NOTIFICACIONES PUSH       -->
+  <!-- ========================================== -->
+  @if (showPushTesterModal()) {
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full border border-gray-100 overflow-hidden transform transition-all">
+        <div class="p-6 bg-purple-700 text-white flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="material-icons-outlined text-2xl">notifications_active</span>
+            <h3 class="font-black text-lg uppercase tracking-tight">Probar Notificaciones Push</h3>
+          </div>
+          <button (click)="showPushTesterModal.set(false)" class="text-white/80 hover:text-white">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+
+        <form [formGroup]="testerForm" (ngSubmit)="sendTestPushAlert()" class="p-6 space-y-4">
+          <p class="text-xs text-gray-500">
+            Envía una alerta en vivo simulada vía Pusher para verificar las notificaciones del navegador, el sonido sintetizado y el cambio de estado de la mesa en tiempo real.
+          </p>
+
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1">Mesa a alertar:</label>
+            <select 
+              formControlName="tableNumber"
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+            >
+              @for (table of tableMapService.tables(); track table.id) {
+                <option [value]="table.number">Mesa {{ table.number }} ({{ table.chairs || table.capacity }} sillas - {{ table.location }})</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1">Tipo de Notificación:</label>
+            <select 
+              formControlName="type"
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+            >
+              <option value="call_waiter">🔔 Llamada de Mozo (Atención en Mesa)</option>
+              <option value="request_bill">💳 Solicitud de Cuenta (Pre-cuenta / Cobro)</option>
+              <option value="new_order">🍗 Nuevo Pedido Registrado</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-gray-600 uppercase tracking-wider mb-1">Mensaje de Alerta:</label>
+            <input 
+              type="text" 
+              formControlName="message"
+              class="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+            />
+          </div>
+
+          <div class="pt-4 flex items-center justify-end gap-2 border-t border-gray-100">
+            <button 
+              type="button" 
+              (click)="showPushTesterModal.set(false)"
+              class="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cerrar
+            </button>
+            <button 
+              type="submit" 
+              class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black uppercase tracking-wider shadow transition-all flex items-center gap-1.5"
+            >
+              <span class="material-icons-outlined text-sm">send</span>
+              <span>Emitir Alerta Push</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

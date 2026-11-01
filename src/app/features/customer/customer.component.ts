@@ -12,6 +12,8 @@ import { ProductResponse } from '../../models/product.model';
 import { Banner } from '../../models/banner.model';
 import { OrderDetailRequest } from '../../models/order.model';
 import { TipoDocumento } from '../../models/catalogo.model';
+import { TableMapService } from '../../services/table-map.service';
+import { RestaurantTable, TableShape } from '../../models/table-map.model';
 import { RouterLink, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { finalize } from 'rxjs';
@@ -63,6 +65,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
 
   products = signal<ProductResponse[]>([]);
   banners = signal<Banner[]>([]);
+  loadingBanners = signal(true);
   tiposDocumento = signal<TipoDocumento[]>([]);
   currentBannerIndex = signal(0);
   private bannerInterval: any;
@@ -81,6 +84,18 @@ export class CustomerComponent implements OnInit, OnDestroy {
   isCartOpen = signal(false);
   showCheckoutModal = signal(false);
   showUserDropdown = signal(false);
+
+  public readonly tableMapService = inject(TableMapService);
+
+  // Modalidad de pedido: Delivery o Comer en el Salón (Elegir Mesa)
+  orderType = signal<'delivery' | 'dine_in'>('delivery');
+  selectedCustomerTable = signal<RestaurantTable | null>(null);
+  customerActiveMapId = signal<string>('salon-principal');
+
+  customerActiveTables = computed(() => {
+    const mapId = this.customerActiveMapId();
+    return this.tableMapService.tables().filter(t => t.mapId === mapId);
+  });
 
   // Maps properties
   businessLocation = { lat: -12.784433, lng: -74.975442 };
@@ -116,10 +131,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
 
   constructor() {
     this.loadProducts();
-
-    this.bannerService.getBanners().subscribe(data => {
-      this.banners.set(data.filter(b => b.isActive).sort((a, b) => a.order - b.order));
-    });
+    this.loadBanners();
 
     this.catalogoService.getTiposDocumento().subscribe(data => {
       this.tiposDocumento.set(data);
@@ -133,6 +145,20 @@ export class CustomerComponent implements OnInit, OnDestroy {
     }
 
     this.loadCatalogos();
+  }
+
+  loadBanners() {
+    this.loadingBanners.set(true);
+    this.bannerService.getBanners().pipe(
+      finalize(() => this.loadingBanners.set(false))
+    ).subscribe({
+      next: (data) => {
+        this.banners.set(data.filter(b => b.isActive).sort((a, b) => a.order - b.order));
+      },
+      error: (err) => {
+        console.error('Error al cargar banners:', err);
+      }
+    });
   }
 
   loadProducts() {
@@ -324,7 +350,41 @@ export class CustomerComponent implements OnInit, OnDestroy {
     this.toastService.info('Sesión cerrada correctamente', 'Adiós');
   }
 
+  setOrderType(type: 'delivery' | 'dine_in') {
+    this.orderType.set(type);
+    if (type === 'dine_in') {
+      this.checkoutForm.get('address')?.clearValidators();
+      this.checkoutForm.get('address')?.updateValueAndValidity();
+      if (this.selectedCustomerTable()) {
+        const t = this.selectedCustomerTable()!;
+        this.checkoutForm.patchValue({ address: `Mesa ${t.number} (${t.location || 'Salón'})` });
+      }
+    } else {
+      this.checkoutForm.get('address')?.setValidators([Validators.required, Validators.minLength(5)]);
+      this.checkoutForm.get('address')?.updateValueAndValidity();
+    }
+  }
+
+  selectCustomerTable(table: RestaurantTable) {
+    if (table.status === 'occupied') {
+      this.toastService.warning(`La Mesa ${table.number} se encuentra ocupada actualmente. Por favor elige una mesa disponible.`);
+      return;
+    }
+    this.selectedCustomerTable.set(table);
+    this.checkoutForm.patchValue({ address: `Mesa ${table.number} (${table.location || 'Salón'})` });
+    this.toastService.success(`Mesa ${table.number} seleccionada (${table.chairs || table.capacity} sillas en ${table.location})`, 'Mesa Elegida');
+  }
+
+  getChairSlots(table: { chairs?: number; capacity?: number; shape?: TableShape }) {
+    return this.tableMapService.getChairSlots(table);
+  }
+
   processOrder() {
+    if (this.orderType() === 'dine_in' && !this.selectedCustomerTable()) {
+      this.toastService.warning('Por favor selecciona una mesa disponible en el mapa del local para tu pedido en salón.', 'Mesa Requerida');
+      return;
+    }
+
     if (this.checkoutForm.invalid) {
       this.checkoutForm.markAllAsTouched();
       return;
@@ -337,6 +397,12 @@ export class CustomerComponent implements OnInit, OnDestroy {
     }
 
     this.loading.set(true);
+
+    const isDineIn = this.orderType() === 'dine_in';
+    const chosenTable = this.selectedCustomerTable();
+    const finalAddress = isDineIn 
+      ? `Mesa ${chosenTable?.number} (${chosenTable?.location || 'Salón'})`
+      : (this.checkoutForm.value.address || '');
 
     const tipoDocId = this.checkoutForm.value.idTipoDocumento;
     const tipoDocNombre = this.tiposDocumento().find(t => t.id === tipoDocId)?.nombre || 'DNI';
@@ -354,7 +420,10 @@ export class CustomerComponent implements OnInit, OnDestroy {
       customerName: this.checkoutForm.value.name,
       documentNumber: this.checkoutForm.value.numeroDocumento,
       documentType: tipoDocNombre,
-      customerEmail: this.authService.email
+      customerEmail: this.authService.email,
+      customerAddress: finalAddress,
+      customerPhone: this.checkoutForm.value.phone,
+      tableNumber: isDineIn ? chosenTable?.number : undefined
     }).pipe(
       finalize(() => this.loading.set(false))
     ).subscribe({

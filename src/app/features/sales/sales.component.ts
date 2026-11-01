@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService } from '../../services/product.service';
 import { OrderService } from '../../services/order.service';
 import { AuthService } from '../../services/auth.service';
@@ -10,6 +10,8 @@ import { DniService } from '../../services/dni.service';
 import { PusherService } from '../../services/pusher.service';
 import { ProductResponse } from '../../models/product.model';
 import { OrderDetailRequest, OrderResponse } from '../../models/order.model';
+import { RestaurantTable, FloorMap, TableShape } from '../../models/table-map.model';
+import { TableMapService } from '../../services/table-map.service';
 import { ToastrService } from 'ngx-toastr';
 import { switchMap, finalize, map, Subscription } from 'rxjs';
 
@@ -17,16 +19,9 @@ export interface CartItem extends ProductResponse {
   quantity: number;
 }
 
-export interface RestaurantTable {
-  number: string;
-  label: string;
-  isOccupied: boolean;
-  order?: OrderResponse;
-}
-
 @Component({
   selector: 'app-sales',
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink],
   templateUrl: './sales.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -36,6 +31,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   private readonly clientService = inject(ClientService);
   private readonly dniService = inject(DniService);
   public readonly authService = inject(AuthService);
+  public readonly tableMapService = inject(TableMapService);
   private readonly pusherService = inject(PusherService);
   private readonly fb = inject(FormBuilder);
   private readonly toastService = inject(ToastrService);
@@ -68,7 +64,8 @@ export class SalesComponent implements OnInit, OnDestroy {
   loadingTables = signal(false);
   tableSearchQuery = signal('');
   tableStatusFilter = signal<string>('all');
-  tablesViewMode = signal<'orders_only' | 'all_tables'>('orders_only');
+  tablesViewMode = signal<'visual_map' | 'orders_only' | 'all_tables'>('visual_map');
+  selectedSector = signal<string>('all');
 
   // Detalle y Cobro de Mesa
   selectedTableOrder = signal<OrderResponse | null>(null);
@@ -133,53 +130,42 @@ export class SalesComponent implements OnInit, OnDestroy {
     return orders;
   });
 
-  // Mapa de mesas del salón (Mesas 1 a 12 + cualquier otra mesa detectada con pedido activo)
+  // Mesas del salón sincronizadas con el servicio de planos y mesas
   allFloorTables = computed<RestaurantTable[]>(() => {
-    const activeOrders = this.activeTableOrders();
-    const tableMap = new Map<string, OrderResponse>();
-
-    for (const order of activeOrders) {
-      if (order.tableNumber) {
-        const key = order.tableNumber.trim();
-        if (!tableMap.has(key)) {
-          tableMap.set(key, order);
-        }
-      }
+    let list = this.tableMapService.tables();
+    const sector = this.selectedSector();
+    if (sector !== 'all') {
+      list = list.filter(t => t.mapId === sector);
     }
 
-    const defaultTableNumbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-    const result: RestaurantTable[] = [];
-
-    // Primero las mesas por defecto
-    for (const num of defaultTableNumbers) {
-      const order = tableMap.get(num) || tableMap.get(`Mesa ${num}`) || tableMap.get(`M-${num}`);
-      result.push({
-        number: num,
-        label: `Mesa ${num}`,
-        isOccupied: Boolean(order),
-        order
-      });
-    }
-
-    // Agregar mesas adicionales personalizadas que no estén en 1-12
-    for (const [key, order] of tableMap.entries()) {
-      const isAlreadyIncluded = result.some(t => 
-        t.number.toLowerCase() === key.toLowerCase() || 
-        t.label.toLowerCase() === key.toLowerCase() ||
-        key === `Mesa ${t.number}`
+    const query = this.tableSearchQuery().trim().toLowerCase();
+    if (query) {
+      list = list.filter(t => 
+        t.number.toLowerCase().includes(query) || 
+        (t.name && t.name.toLowerCase().includes(query)) ||
+        (t.order && (t.order.customerName || '').toLowerCase().includes(query))
       );
-      if (!isAlreadyIncluded) {
-        result.push({
-          number: key,
-          label: key.toLowerCase().startsWith('mesa') ? key : `Mesa ${key}`,
-          isOccupied: true,
-          order
-        });
-      }
     }
 
-    return result;
+    const statusFilter = this.tableStatusFilter();
+    if (statusFilter === 'occupied') {
+      list = list.filter(t => t.status === 'occupied' || t.status === 'billing' || t.status === 'calling');
+    } else if (statusFilter === 'available') {
+      list = list.filter(t => t.status === 'available' || !t.status);
+    }
+
+    return list;
   });
+
+  // Mesas del plano activo para el lienzo 2D
+  activeCanvasTables = computed<RestaurantTable[]>(() => {
+    const activeMapId = this.tableMapService.activeMapId();
+    return this.tableMapService.tables().filter(t => t.mapId === activeMapId);
+  });
+
+  getChairSlots(table: { chairs?: number; capacity?: number; shape?: TableShape }) {
+    return this.tableMapService.getChairSlots(table);
+  }
 
   ngOnInit() {
     this.queryParamsSub = this.route.queryParams.subscribe(params => {
@@ -230,7 +216,10 @@ export class SalesComponent implements OnInit, OnDestroy {
         if (showLoading) this.loadingTables.set(false);
       })
     ).subscribe({
-      next: (orders) => this.allOrders.set(orders),
+      next: (orders) => {
+        this.allOrders.set(orders);
+        this.tableMapService.syncTablesWithOrders(orders);
+      },
       error: () => {
         if (showLoading) this.toastService.error('Error al cargar órdenes de mesas');
       }
@@ -610,7 +599,7 @@ export class SalesComponent implements OnInit, OnDestroy {
 
   // Seleccionar mesa desde el plano de mesas
   selectFloorTable(table: RestaurantTable) {
-    if (table.isOccupied && table.order) {
+    if ((table.status === 'occupied' || table.status === 'billing' || table.status === 'calling') && table.order) {
       this.openTableDetail(table.order);
     } else {
       // Mesa libre: iniciar venta para esa mesa
