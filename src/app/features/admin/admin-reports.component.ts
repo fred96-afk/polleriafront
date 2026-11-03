@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ReportService } from '../../services/report.service';
+import { AlertService } from '../../services/alert.service';
 import { ToastrService } from 'ngx-toastr';
 import { finalize } from 'rxjs';
 
@@ -14,6 +15,7 @@ import { finalize } from 'rxjs';
 export class AdminReportsComponent implements OnInit {
   public readonly reportService = inject(ReportService);
   private readonly fb = inject(FormBuilder);
+  private readonly alertService = inject(AlertService);
   private readonly toastService = inject(ToastrService);
 
   // Estados de carga síncrona tradicional
@@ -131,8 +133,14 @@ export class AdminReportsComponent implements OnInit {
   }
 
   // Eliminar un reporte generado
-  deleteReport(fileName: string): void {
-    if (confirm(`¿Estás seguro de eliminar el reporte "${fileName}"?`)) {
+  async deleteReport(fileName: string): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: `¿Eliminar el reporte "${fileName}"?`,
+      text: 'Esta acción no se puede deshacer.',
+      confirmButtonText: 'Sí, eliminar',
+    });
+
+    if (confirmed) {
       this.reportService.deleteReport(fileName).subscribe();
     }
   }

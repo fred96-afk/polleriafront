@@ -5,6 +5,7 @@ import { ProductService } from '../../services/product.service';
 import { CategoryService } from '../../services/category.service';
 import { ProductResponse, ProductRequest } from '../../models/product.model';
 import { CategoryResponse } from '../../models/category.model';
+import { AlertService } from '../../services/alert.service';
 import { ToastrService } from 'ngx-toastr';
 import { Observable, finalize } from 'rxjs';
 
@@ -18,6 +19,7 @@ export class AdminProductsComponent {
   private readonly productService = inject(ProductService);
   private readonly categoryService = inject(CategoryService);
   private readonly fb = inject(FormBuilder);
+  private readonly alertService = inject(AlertService);
   private readonly toastService = inject(ToastrService);
 
   products = signal<ProductResponse[]>([]);
@@ -149,8 +151,14 @@ export class AdminProductsComponent {
     });
   }
 
-  deleteProduct(id: number) {
-    if (confirm('¿Eliminar producto?')) {
+  async deleteProduct(id: number): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: '¿Eliminar producto?',
+      text: 'Esta acción no se puede deshacer.',
+      confirmButtonText: 'Sí, eliminar',
+    });
+
+    if (confirmed) {
       this.productService.deleteProduct(id).subscribe(() => this.loadProducts());
     }
   }

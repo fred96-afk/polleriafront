@@ -5,6 +5,7 @@ import { EmpleadoService } from '../../services/empleado.service';
 import { CatalogoService } from '../../services/catalogo.service';
 import { EmpleadoResponse, EmpleadoRequest } from '../../models/empleado.model';
 import { Cargo, TipoDocumento } from '../../models/catalogo.model';
+import { AlertService } from '../../services/alert.service';
 import { ToastrService } from 'ngx-toastr';
 import { Observable, finalize } from 'rxjs';
 
@@ -18,6 +19,7 @@ export class AdminEmpleadosComponent {
   private readonly empleadoService = inject(EmpleadoService);
   private readonly catalogoService = inject(CatalogoService);
   private readonly fb = inject(FormBuilder);
+  private readonly alertService = inject(AlertService);
   private readonly toastService = inject(ToastrService);
 
   empleados = signal<EmpleadoResponse[]>([]);
@@ -130,8 +132,14 @@ export class AdminEmpleadosComponent {
     });
   }
 
-  deleteEmpleado(id: number) {
-    if (confirm('¿Estás seguro de eliminar o inhabilitar este empleado?')) {
+  async deleteEmpleado(id: number): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: '¿Inhabilitar este empleado?',
+      text: 'El empleado dejará de estar disponible.',
+      confirmButtonText: 'Sí, inhabilitar',
+    });
+
+    if (confirmed) {
       this.empleadoService.deleteEmpleado(id).subscribe({
         next: () => {
           this.toastService.success('Empleado inhabilitado', '¡Éxito!');

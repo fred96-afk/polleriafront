@@ -14,6 +14,7 @@ import { OrderDetailRequest } from '../../models/order.model';
 import { TipoDocumento } from '../../models/catalogo.model';
 import { TableMapService } from '../../services/table-map.service';
 import { RestaurantTable, TableShape } from '../../models/table-map.model';
+import { AlertService } from '../../services/alert.service';
 import { RouterLink, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { finalize } from 'rxjs';
@@ -58,6 +59,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
   private readonly bannerService = inject(BannerService);
   private readonly catalogoService = inject(CatalogoService);
   private readonly dniService = inject(DniService);
+  private readonly alertService = inject(AlertService);
   private readonly router = inject(Router);
   private readonly toastService = inject(ToastrService);
   private readonly fb = inject(FormBuilder);
@@ -335,12 +337,18 @@ export class CustomerComponent implements OnInit, OnDestroy {
     this.showCheckoutModal.set(true);
   }
 
-  openTrackingDialog() {
-    const orderId = prompt('Por favor, ingresa el número de tu pedido (ID):');
+  async openTrackingDialog(): Promise<void> {
+    const orderId = await this.alertService.prompt({
+      title: 'Consultar pedido',
+      text: 'Ingresa el número de tu pedido (ID).',
+      inputPlaceholder: 'Número de pedido',
+      confirmButtonText: 'Consultar',
+      inputValidator: (value) =>
+        value.trim() && !isNaN(Number(value)) ? null : 'Ingresa un número de pedido válido.',
+    });
+
     if (orderId && !isNaN(Number(orderId))) {
       this.router.navigate(['/order-tracking', orderId]);
-    } else if (orderId) {
-      this.toastService.warning('Por favor, ingresa un número de pedido válido.', 'Aviso');
     }
   }
 

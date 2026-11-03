@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CategoryService } from '../../services/category.service';
 import { CategoryResponse, CategoryRequest } from '../../models/category.model';
+import { AlertService } from '../../services/alert.service';
 import { ToastrService } from 'ngx-toastr';
 import { Observable, finalize } from 'rxjs';
 
@@ -15,6 +16,7 @@ import { Observable, finalize } from 'rxjs';
 export class AdminCategoriesComponent {
   private readonly categoryService = inject(CategoryService);
   private readonly fb = inject(FormBuilder);
+  private readonly alertService = inject(AlertService);
   private readonly toastService = inject(ToastrService);
 
   categories = signal<CategoryResponse[]>([]);
@@ -124,8 +126,14 @@ export class AdminCategoriesComponent {
     });
   }
 
-  deleteCategory(id: number) {
-    if (confirm('¿Estás seguro de eliminar esta categoría?')) {
+  async deleteCategory(id: number): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: '¿Eliminar esta categoría?',
+      text: 'Esta acción no se puede deshacer.',
+      confirmButtonText: 'Sí, eliminar',
+    });
+
+    if (confirmed) {
       this.categoryService.deleteCategory(id).subscribe({
         next: () => {
           this.toastService.success('Categoría eliminada', '¡Éxito!');

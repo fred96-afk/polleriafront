@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { OrderService } from '../../services/order.service';
 import { PusherService } from '../../services/pusher.service';
 import { OrderResponse } from '../../models/order.model';
+import { AlertService } from '../../services/alert.service';
 import { finalize, Subscription } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 
@@ -15,6 +16,7 @@ import { ToastrService } from 'ngx-toastr';
 export class AdminOrdersComponent implements OnInit, OnDestroy {
   private readonly orderService = inject(OrderService);
   private readonly pusherService = inject(PusherService);
+  private readonly alertService = inject(AlertService);
   private readonly toastService = inject(ToastrService);
 
   orders = signal<OrderResponse[]>([]);
@@ -104,8 +106,14 @@ export class AdminOrdersComponent implements OnInit, OnDestroy {
     });
   }
 
-  deleteOrder(id: number): void {
-    if (confirm('¿Cancelar esta orden?')) {
+  async deleteOrder(id: number): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: '¿Cancelar esta orden?',
+      text: 'Esta acción no se puede deshacer.',
+      confirmButtonText: 'Sí, cancelar',
+    });
+
+    if (confirmed) {
       this.orderService.deleteOrder(id).subscribe({
         next: () => {
           this.toastService.success('Orden cancelada');

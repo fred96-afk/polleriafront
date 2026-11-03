@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, FormsModule, Validators } from '@angu
 import { TableMapService } from '../../services/table-map.service';
 import { FloorMap, RestaurantTable, TableShape, ChairSlot } from '../../models/table-map.model';
 import { OrderService } from '../../services/order.service';
+import { AlertService } from '../../services/alert.service';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
@@ -16,6 +17,7 @@ import { ToastrService } from 'ngx-toastr';
 export class AdminTablesComponent implements OnInit {
   public readonly tableMapService = inject(TableMapService);
   private readonly orderService = inject(OrderService);
+  private readonly alertService = inject(AlertService);
   private readonly toastService = inject(ToastrService);
   private readonly fb = inject(FormBuilder);
 
@@ -178,8 +180,14 @@ export class AdminTablesComponent implements OnInit {
     this.showMapModal.set(false);
   }
 
-  deleteMap(map: FloorMap) {
-    if (confirm(`¿Estás seguro de eliminar el plano "${map.name}" y todas sus mesas asociadas?`)) {
+  async deleteMap(map: FloorMap): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: `¿Eliminar el plano "${map.name}"?`,
+      text: 'También se eliminarán todas las mesas asociadas.',
+      confirmButtonText: 'Sí, eliminar',
+    });
+
+    if (confirmed) {
       this.tableMapService.deleteMap(map.id);
     }
   }
@@ -267,8 +275,14 @@ export class AdminTablesComponent implements OnInit {
     this.showTableModal.set(false);
   }
 
-  deleteTable(table: RestaurantTable) {
-    if (confirm(`¿Eliminar la Mesa ${table.number} (${table.chairs || table.capacity} sillas) de este plano?`)) {
+  async deleteTable(table: RestaurantTable): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: `¿Eliminar la Mesa ${table.number}?`,
+      text: `Esta mesa tiene ${table.chairs || table.capacity} sillas.`,
+      confirmButtonText: 'Sí, eliminar',
+    });
+
+    if (confirmed) {
       this.tableMapService.deleteTable(table.id);
     }
   }
@@ -353,8 +367,14 @@ export class AdminTablesComponent implements OnInit {
     this.showPushTesterModal.set(false);
   }
 
-  resetLayout() {
-    if (confirm('¿Restaurar la distribución inicial de planos y mesas por defecto?')) {
+  async resetLayout(): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: '¿Restaurar la distribución inicial?',
+      text: 'Se restablecerán los planos y las mesas por defecto.',
+      confirmButtonText: 'Sí, restaurar',
+    });
+
+    if (confirmed) {
       this.tableMapService.resetToDefaultLayout();
     }
   }

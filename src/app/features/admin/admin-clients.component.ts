@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ClientService } from '../../services/client.service';
 import { ClientResponse, ClientRequest } from '../../models/client.model';
+import { AlertService } from '../../services/alert.service';
 import { ToastrService } from 'ngx-toastr';
 import { Observable, finalize } from 'rxjs';
 
@@ -15,6 +16,7 @@ import { Observable, finalize } from 'rxjs';
 export class AdminClientsComponent {
   private readonly clientService = inject(ClientService);
   private readonly fb = inject(FormBuilder);
+  private readonly alertService = inject(AlertService);
   private readonly toastService = inject(ToastrService);
 
   clients = signal<ClientResponse[]>([]);
@@ -93,8 +95,14 @@ export class AdminClientsComponent {
     });
   }
 
-  deleteClient(id: number) {
-    if (confirm('¿Eliminar cliente?')) {
+  async deleteClient(id: number): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: '¿Eliminar cliente?',
+      text: 'Esta acción no se puede deshacer.',
+      confirmButtonText: 'Sí, eliminar',
+    });
+
+    if (confirmed) {
       this.clientService.deleteClient(id).subscribe(() => this.loadClients());
     }
   }

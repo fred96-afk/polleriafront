@@ -12,6 +12,7 @@ import { ProductResponse } from '../../models/product.model';
 import { OrderDetailRequest, OrderResponse } from '../../models/order.model';
 import { RestaurantTable, FloorMap, TableShape } from '../../models/table-map.model';
 import { TableMapService } from '../../services/table-map.service';
+import { AlertService } from '../../services/alert.service';
 import { ToastrService } from 'ngx-toastr';
 import { switchMap, finalize, map, Subscription } from 'rxjs';
 
@@ -33,6 +34,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   public readonly authService = inject(AuthService);
   public readonly tableMapService = inject(TableMapService);
   private readonly pusherService = inject(PusherService);
+  private readonly alertService = inject(AlertService);
   private readonly fb = inject(FormBuilder);
   private readonly toastService = inject(ToastrService);
   private readonly route = inject(ActivatedRoute);
@@ -582,8 +584,14 @@ export class SalesComponent implements OnInit, OnDestroy {
   }
 
   // Cancelar orden de mesa
-  cancelTableOrder(order: OrderResponse) {
-    if (!confirm(`¿Está seguro de cancelar el pedido #${order.id} de la Mesa ${order.tableNumber}?`)) {
+  async cancelTableOrder(order: OrderResponse): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: `¿Cancelar el pedido #${order.id}?`,
+      text: `El pedido de la Mesa ${order.tableNumber} será cancelado.`,
+      confirmButtonText: 'Sí, cancelar',
+    });
+
+    if (!confirmed) {
       return;
     }
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BannerService } from '../../services/banner.service';
 import { Banner } from '../../models/banner.model';
+import { AlertService } from '../../services/alert.service';
 import { ToastrService } from 'ngx-toastr';
 import { Observable, finalize } from 'rxjs';
 
@@ -15,6 +16,7 @@ import { Observable, finalize } from 'rxjs';
 export class AdminBannersComponent {
   private readonly bannerService = inject(BannerService);
   private readonly fb = inject(FormBuilder);
+  private readonly alertService = inject(AlertService);
   private readonly toastService = inject(ToastrService);
 
   banners = signal<Banner[]>([]);
@@ -122,8 +124,14 @@ export class AdminBannersComponent {
     });
   }
 
-  deleteBanner(id: number) {
-    if (confirm('¿Eliminar este banner?')) {
+  async deleteBanner(id: number): Promise<void> {
+    const confirmed = await this.alertService.confirm({
+      title: '¿Eliminar este banner?',
+      text: 'Esta acción no se puede deshacer.',
+      confirmButtonText: 'Sí, eliminar',
+    });
+
+    if (confirmed) {
       this.bannerService.deleteBanner(id).subscribe(() => this.loadBanners());
     }
   }
