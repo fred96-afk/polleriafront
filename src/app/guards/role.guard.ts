@@ -15,7 +15,7 @@ export const internalAccessGuard: CanActivateFn = () => {
     return router.createUrlTree(['/admin/login']);
   }
 
-  if (authService.canAccessAdminDashboard() || authService.canAccessPos()) {
+  if (authService.canAccessInternalPanel()) {
     return true;
   }
 
@@ -38,6 +38,10 @@ export const adminDashboardGuard: CanActivateFn = () => {
     return router.createUrlTree(['/admin/sales']);
   }
 
+  if (authService.canAccessDeliveryOrders()) {
+    return router.createUrlTree(['/admin/delivery']);
+  }
+
   return denyAccess(router, authService, '/admin/login');
 };
 
@@ -55,6 +59,29 @@ export const posGuard: CanActivateFn = () => {
 
   if (authService.canAccessAdminDashboard()) {
     return router.createUrlTree(['/admin/dashboard/products']);
+  }
+
+  return denyAccess(router, authService, '/admin/login');
+};
+
+export const deliveryGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  if (!authService.isAuthenticated()) {
+    return router.createUrlTree(['/admin/login']);
+  }
+
+  if (authService.canAccessDeliveryOrders()) {
+    return true;
+  }
+
+  if (authService.canAccessAdminDashboard()) {
+    return router.createUrlTree(['/admin/dashboard/orders']);
+  }
+
+  if (authService.canAccessPos()) {
+    return router.createUrlTree(['/admin/sales']);
   }
 
   return denyAccess(router, authService, '/admin/login');

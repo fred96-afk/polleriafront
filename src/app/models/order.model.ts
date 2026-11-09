@@ -23,6 +23,8 @@ export interface OrderResponse {
   deliveryName?: string | null;
   totalAmount: number;
   type?: string;
+  isPos?: boolean;
+  isPickup?: boolean;
   details: OrderDetailResponse[];
   tableNumber?: string | null;
   status: string;

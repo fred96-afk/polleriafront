@@ -126,7 +126,7 @@ export class InactivityService {
   }
 
   private handleInactivityLogout(): void {
-    const wasInternalUser = this.authService.canAccessAdminDashboard() || this.authService.canAccessPos();
+    const wasInternalUser = this.authService.canAccessInternalPanel();
 
     this.stopTracking();
     this.authService.logout();

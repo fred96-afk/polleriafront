@@ -126,6 +126,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
     idTipoDocumento: [null as number | null, [Validators.required]],
     numeroDocumento: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(11)]],
     name: ['', [Validators.required, Validators.minLength(3)]],
+    email: ['', [Validators.required, Validators.email]],
     phone: ['', [Validators.required, Validators.pattern(/^[0-9]{9}$/)]],
     address: ['', [Validators.required, Validators.minLength(5)]],
     notes: ['']
@@ -143,7 +144,10 @@ export class CustomerComponent implements OnInit, OnDestroy {
     });
 
     if (this.authService.isAuthenticated()) {
-      this.checkoutForm.patchValue({ name: this.authService.displayName });
+      this.checkoutForm.patchValue({
+        name: this.authService.displayName,
+        email: this.authService.email || ''
+      });
     }
 
     this.loadCatalogos();
@@ -428,7 +432,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
       customerName: this.checkoutForm.value.name,
       documentNumber: this.checkoutForm.value.numeroDocumento,
       documentType: tipoDocNombre,
-      customerEmail: this.authService.email,
+      customerEmail: this.checkoutForm.value.email,
       customerAddress: finalAddress,
       customerPhone: this.checkoutForm.value.phone,
       tableNumber: isDineIn ? chosenTable?.number : undefined
@@ -466,7 +470,7 @@ export class CustomerComponent implements OnInit, OnDestroy {
           formData: this.checkoutForm.value,
           cartCount: this.cartCount(),
           total: this.totalPrice(),
-          customerEmail: this.authService.email
+          customerEmail: this.checkoutForm.value.email
         });
         console.groupEnd();
 

@@ -1,0 +1,98 @@
+<section class="mx-auto max-w-5xl space-y-6">
+  <header class="flex flex-col gap-4 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
+    <div>
+      <h1 class="text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">Pedidos de reparto</h1>
+      <p class="mt-1 text-sm text-gray-600">Revisa y toma los pedidos disponibles para entregar.</p>
+    </div>
+    <button
+      type="button"
+      (click)="loadOrders()"
+      [disabled]="loading()"
+      class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2 font-bold text-gray-800 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-orange-600/20 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <span class="material-icons-outlined" [class.animate-spin]="loading()" aria-hidden="true">refresh</span>
+      Actualizar
+    </button>
+  </header>
+
+  @if (loading() && orders().length === 0) {
+    <div class="rounded-3xl border border-gray-100 bg-white p-10 text-center text-gray-700" role="status">
+      Cargando pedidos...
+    </div>
+  } @else if (deliveryOrders().length === 0) {
+    <div class="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center">
+      <span class="material-icons-outlined text-5xl text-gray-400" aria-hidden="true">delivery_dining</span>
+      <h2 class="mt-3 text-lg font-bold text-gray-900">No hay pedidos de reparto</h2>
+      <p class="mt-1 text-sm text-gray-600">Los pedidos nuevos aparecerán aquí.</p>
+    </div>
+  } @else {
+    <div class="grid gap-5">
+      @for (order of deliveryOrders(); track order.id) {
+        <article class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0 flex-1 space-y-3">
+              <div class="flex flex-wrap items-center gap-3">
+                <h2 class="text-lg font-black text-gray-900">Pedido #{{ order.id }}</h2>
+                <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-900">
+                  {{ order.status }}
+                </span>
+              </div>
+
+              <dl class="grid gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt class="font-bold text-gray-700">Cliente</dt>
+                  <dd class="text-gray-900">{{ order.customerName || 'No especificado' }}</dd>
+                </div>
+                <div>
+                  <dt class="font-bold text-gray-700">Teléfono</dt>
+                  <dd class="text-gray-900">{{ order.customerPhone || 'No especificado' }}</dd>
+                </div>
+                <div class="sm:col-span-2">
+                  <dt class="font-bold text-gray-700">Dirección</dt>
+                  <dd class="break-words text-gray-900">{{ order.customerAddress || 'No especificada' }}</dd>
+                </div>
+                <div>
+                  <dt class="font-bold text-gray-700">Fecha</dt>
+                  <dd class="text-gray-900">{{ order.orderDate | date:'short' }}</dd>
+                </div>
+                <div>
+                  <dt class="font-bold text-gray-700">Total</dt>
+                  <dd class="font-black text-gray-900">S/ {{ order.totalAmount.toFixed(2) }}</dd>
+                </div>
+              </dl>
+
+              @if (order.details.length > 0) {
+                <ul class="space-y-1 border-t border-gray-100 pt-3 text-sm text-gray-700">
+                  @for (item of order.details; track item.id) {
+                    <li>{{ item.quantity }} × {{ item.productName }}</li>
+                  }
+                </ul>
+              }
+
+              @if (isAssignedToCurrentUser(order)) {
+                <p class="text-sm font-bold text-green-800" role="status">Este pedido está asignado a tu cuenta.</p>
+              }
+            </div>
+
+            @if (order.deliveryUserId === null || order.deliveryUserId === undefined) {
+              <button
+                type="button"
+                (click)="acceptOrder(order)"
+                [disabled]="acceptingOrderId() !== null"
+                class="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-orange-700 px-5 py-3 font-bold text-white transition-colors hover:bg-orange-800 focus:outline-none focus:ring-4 focus:ring-orange-700/30 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                @if (acceptingOrderId() === order.id) {
+                  <span class="material-icons-outlined animate-spin" aria-hidden="true">sync</span>
+                  Asignando...
+                } @else {
+                  <span class="material-icons-outlined" aria-hidden="true">check_circle</span>
+                  Tomar pedido
+                }
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { enviroment } from '../../enviroments/enviroments.development';
 import { Observable, Subscription, interval } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { takeWhile } from 'rxjs/operators';
 import { ToastrService } from 'ngx-toastr';
 import { PusherService } from './pusher.service';
@@ -214,20 +215,13 @@ export class ReportService {
       channel
     };
 
-    return new Observable<ReportQueueResponse>(observer => {
-      this.http.post<ReportQueueResponse>(`${this.apiUrl}/sales/excel/queue`, body).subscribe({
-        next: (resp) => {
-          if (resp && resp.jobId) {
-            this.trackJobWithPolling(resp.jobId, 'Excel', startDate, endDate);
-          }
-          observer.next(resp);
-          observer.complete();
-        },
-        error: (err) => {
-          observer.error(err);
+    return this.http.post<ReportQueueResponse>(`${this.apiUrl}/sales/excel/queue`, body).pipe(
+      tap(resp => {
+        if (resp?.jobId) {
+          this.trackJobWithPolling(resp.jobId, 'Excel', startDate, endDate);
         }
-      });
-    });
+      })
+    );
   }
 
   queueSalesPdf(startDate: string, endDate: string, channel = 'reports'): Observable<ReportQueueResponse> {
@@ -238,20 +232,13 @@ export class ReportService {
       channel
     };
 
-    return new Observable<ReportQueueResponse>(observer => {
-      this.http.post<ReportQueueResponse>(`${this.apiUrl}/sales/pdf/queue`, body).subscribe({
-        next: (resp) => {
-          if (resp && resp.jobId) {
-            this.trackJobWithPolling(resp.jobId, 'Pdf', startDate, endDate);
-          }
-          observer.next(resp);
-          observer.complete();
-        },
-        error: (err) => {
-          observer.error(err);
+    return this.http.post<ReportQueueResponse>(`${this.apiUrl}/sales/pdf/queue`, body).pipe(
+      tap(resp => {
+        if (resp?.jobId) {
+          this.trackJobWithPolling(resp.jobId, 'Pdf', startDate, endDate);
         }
-      });
-    });
+      })
+    );
   }
 
   // ==========================================

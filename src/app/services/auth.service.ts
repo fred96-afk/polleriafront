@@ -201,11 +201,19 @@ export class AuthService {
   isDelivery(): boolean {
     const name = this.roleName?.toLowerCase() || '';
     const id = this.roleId;
-    return name.includes('delivery') || id === 3;
+    return name.includes('delivery') || name.includes('repartidor') || id === 3;
   }
 
   canAccessAdminDashboard(): boolean {
     return this.isAdministrator();
+  }
+
+  canAccessDeliveryOrders(): boolean {
+    return this.isDelivery();
+  }
+
+  canAccessInternalPanel(): boolean {
+    return this.canAccessAdminDashboard() || this.canAccessPos() || this.canAccessDeliveryOrders();
   }
 
   canAccessPos(): boolean {

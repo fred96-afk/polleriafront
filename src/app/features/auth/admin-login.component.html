@@ -11,14 +11,14 @@
             Acceso Restringido
           </h2>
           <p class="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em]">
-            Portal de Administración
+            Portal de Personal
           </p>
         </div>
         
         <form class="mt-10 space-y-6" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
           <div class="space-y-5">
             <div class="relative group">
-              <label for="email-address" class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">ID Administrador (Email)</label>
+              <label for="email-address" class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Correo de usuario</label>
               <div class="relative">
                 <span class="material-icons-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-orange-600 transition-colors">account_circle</span>
                 <input
@@ -78,14 +78,14 @@
                 <span class="material-icons-outlined animate-spin mr-3">sync</span>
                 VERIFICANDO...
               } @else {
-                INICIAR SESIÓN ADMIN
+                INICIAR SESIÓN
               }
             </button>
           </div>
 
           <div class="text-center">
             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
-              Este es un sistema privado.<br>El acceso no autorizado está prohibido.
+              Acceso para administración, punto de venta y reparto.
             </p>
           </div>
         </form>

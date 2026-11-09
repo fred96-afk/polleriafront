@@ -1,1 +1,6 @@
 <router-outlet></router-outlet>
+
+<!-- El chat está disponible para clientes y repartidores, pero no en el resto del panel administrativo. -->
+@if (isChatVisible()) {
+  <app-chat></app-chat>
+}

@@ -23,7 +23,9 @@ import { AdminEmpleadosComponent } from './features/admin/admin-empleados.compon
 import { AdminReportsComponent } from './features/admin/admin-reports.component';
 import { AdminDashboardComponent } from './features/admin/admin-dashboard.component';
 import { AdminTablesComponent } from './features/admin/admin-tables.component';
-import { adminDashboardGuard, internalAccessGuard, posGuard } from './guards/role.guard';
+import { AdminMaintenanceComponent } from './features/admin/admin-maintenance.component';
+import { DeliveryOrdersComponent } from './features/delivery/delivery-orders.component';
+import { adminDashboardGuard, deliveryGuard, internalAccessGuard, posGuard } from './guards/role.guard';
 
 export const routes: Routes = [
   // Parte Pública (Cliente)
@@ -37,7 +39,7 @@ export const routes: Routes = [
   { path: 'checkout/failure', component: CheckoutResultComponent },
   { path: 'checkout/pending', component: CheckoutResultComponent },
   { path: 'order-tracking/:id', component: OrderTrackingComponent },
-  { path: 'order-history', component: OrderHistoryComponent },
+  { path: 'chat', redirectTo: '' },
 
   // Parte Administrativa
   { path: 'admin/login', component: AdminLoginComponent },
@@ -47,6 +49,7 @@ export const routes: Routes = [
     canActivate: [internalAccessGuard],
     children: [
       { path: 'sales', component: SalesComponent, canActivate: [posGuard] },
+      { path: 'delivery', component: DeliveryOrdersComponent, canActivate: [deliveryGuard] },
       { 
         path: 'dashboard', 
         component: AdminComponent,
@@ -62,6 +65,7 @@ export const routes: Routes = [
           { path: 'tables', component: AdminTablesComponent },
           { path: 'orders', component: AdminOrdersComponent },
           { path: 'reports', component: AdminReportsComponent },
+          { path: 'maintenance', component: AdminMaintenanceComponent },
           { path: '', redirectTo: 'summary', pathMatch: 'full' }
         ]
       },

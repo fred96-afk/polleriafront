@@ -31,6 +31,7 @@ export class LayoutComponent implements OnInit, OnDestroy {
 
   readonly canAccessAdminDashboard = computed(() => this.authService.canAccessAdminDashboard());
   readonly canAccessPos = computed(() => this.authService.canAccessPos());
+  readonly canAccessDeliveryOrders = computed(() => this.authService.canAccessDeliveryOrders());
 
   readonly isSidebarOpen = signal(false);
   notifications = signal<any[]>([]);

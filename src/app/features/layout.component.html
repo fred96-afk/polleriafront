@@ -66,6 +66,13 @@
         </a>
       }
 
+      @if (canAccessDeliveryOrders()) {
+        <a routerLink="/admin/delivery" routerLinkActive="bg-orange-600 shadow-md" (click)="closeSidebar()" class="flex items-center p-3 hover:bg-orange-600 rounded-lg transition-colors group">
+          <span class="material-icons-outlined mr-3 text-orange-200 group-hover:text-white transition-colors">delivery_dining</span>
+          <span class="font-medium">Pedidos de reparto</span>
+        </a>
+      }
+
       @if (canAccessAdminDashboard()) {
         <div class="pt-6 pb-2 px-3 text-[10px] font-bold text-orange-300 uppercase tracking-[0.2em]">
           Administración
@@ -114,6 +121,10 @@
               <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-300"></span>
             </span>
           }
+        </a>
+        <a routerLink="/admin/dashboard/maintenance" routerLinkActive="bg-orange-600 shadow-md" (click)="closeSidebar()" class="flex items-center p-3 hover:bg-orange-600 rounded-lg transition-colors group">
+          <span class="material-icons-outlined mr-3 text-orange-200 group-hover:text-white transition-colors">build</span>
+          <span class="font-medium">Mantenimiento</span>
         </a>
 
         <button type="button" (click)="notificationService.openModal(); closeSidebar()" class="flex items-center justify-between p-3 hover:bg-orange-600 rounded-lg transition-colors group w-full text-left">

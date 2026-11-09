@@ -1,9 +1,8 @@
 export interface QueueReportRequest {
-  startDate?: string;
-  endDate?: string;
-  reportType?: string | null;
-  channel?: string | null;
-  userId?: string | null;
+  startDate: string;
+  endDate: string;
+  reportType: 'Excel' | 'Pdf';
+  channel: string;
 }
 
 export interface ReportReadyEvent {

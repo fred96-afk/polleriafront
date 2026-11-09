@@ -79,6 +79,7 @@ export class SalesComponent implements OnInit, OnDestroy {
   clientForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
     documentNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{8,11}$/)]],
+    email: ['', [Validators.email]],
     address: ['Venta POS']
   });
 
@@ -402,7 +403,8 @@ export class SalesComponent implements OnInit, OnDestroy {
           details: details,
           customerName: client.name,
           documentNumber: client.documentNumber,
-          documentType: client.documentType
+          documentType: client.documentType,
+          customerEmail: formVal.email?.trim() || null
         });
       }),
       switchMap(order => {
@@ -436,6 +438,7 @@ export class SalesComponent implements OnInit, OnDestroy {
         this.clientForm.reset({
           name: '',
           documentNumber: '',
+          email: '',
           address: 'Venta POS'
         });
         this.showClientModal.set(false);

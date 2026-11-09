@@ -64,12 +64,20 @@ export class AdminLoginComponent {
           return;
         }
 
+        if (this.authService.canAccessDeliveryOrders()) {
+          this.toastService.success('ENTRANDO A TUS PEDIDOS DE REPARTO', 'ACCESO CONCEDIDO');
+          setTimeout(() => {
+            this.router.navigate(['/admin/delivery']);
+          }, 1000);
+          return;
+        }
+
         this.authService.logout();
         this.toastService.error('TU ROL NO TIENE ACCESO A ESTE MÓDULO', 'ACCESO DENEGADO');
         this.loading.set(false);
       },
       error: () => {
-        this.toastService.error('CREDENCIALES DE ADMIN INVÁLIDAS', 'ACCESO DENEGADO');
+        this.toastService.error('CORREO O CONTRASEÑA NO VÁLIDOS', 'ACCESO DENEGADO');
         this.loading.set(false);
       }
     });

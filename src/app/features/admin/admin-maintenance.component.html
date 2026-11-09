@@ -1,0 +1,94 @@
+<section class="mx-auto max-w-3xl space-y-6">
+  <header class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+    <div class="flex items-center gap-4">
+      <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-100 text-orange-700">
+        <span class="material-icons-outlined text-2xl" aria-hidden="true">build</span>
+      </div>
+      <div>
+        <h1 class="text-2xl font-black tracking-tight text-gray-900">Mantenimiento programado</h1>
+        <p class="mt-1 text-sm text-gray-600">Envía el aviso a los usuarios del sistema.</p>
+      </div>
+    </div>
+  </header>
+
+  <form
+    [formGroup]="maintenanceForm"
+    (ngSubmit)="submit()"
+    class="space-y-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8"
+  >
+    <div class="grid gap-6 sm:grid-cols-2">
+      <div class="space-y-2">
+        <label for="scheduled-date" class="block text-sm font-bold text-gray-800">Fecha y hora programada</label>
+        <input
+          id="scheduled-date"
+          type="datetime-local"
+          formControlName="scheduledDate"
+          required
+          class="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-600/20"
+          [class.border-red-600]="maintenanceForm.controls.scheduledDate.touched && maintenanceForm.controls.scheduledDate.invalid"
+        >
+        @if (maintenanceForm.controls.scheduledDate.touched && maintenanceForm.controls.scheduledDate.invalid) {
+          <p class="text-sm text-red-700" role="alert">La fecha programada es obligatoria.</p>
+        }
+      </div>
+
+      <div class="space-y-2">
+        <label for="estimated-duration" class="block text-sm font-bold text-gray-800">Duración estimada (minutos)</label>
+        <input
+          id="estimated-duration"
+          type="number"
+          formControlName="estimatedDuration"
+          min="1"
+          required
+          class="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-600/20"
+          [class.border-red-600]="maintenanceForm.controls.estimatedDuration.touched && maintenanceForm.controls.estimatedDuration.invalid"
+        >
+        @if (maintenanceForm.controls.estimatedDuration.touched && maintenanceForm.controls.estimatedDuration.invalid) {
+          <p class="text-sm text-red-700" role="alert">Indica una duración mayor que cero.</p>
+        }
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <label for="maintenance-details" class="block text-sm font-bold text-gray-800">Detalles del mantenimiento</label>
+      <textarea
+        id="maintenance-details"
+        formControlName="details"
+        rows="5"
+        maxlength="2000"
+        required
+        class="w-full resize-y rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-600/20"
+        [class.border-red-600]="maintenanceForm.controls.details.touched && maintenanceForm.controls.details.invalid"
+      ></textarea>
+      @if (maintenanceForm.controls.details.touched && maintenanceForm.controls.details.invalid) {
+        <p class="text-sm text-red-700" role="alert">Describe el mantenimiento (máximo 2000 caracteres).</p>
+      }
+    </div>
+
+    <div class="space-y-2">
+      <label for="support-contact" class="block text-sm font-bold text-gray-800">Contacto de soporte (opcional)</label>
+      <input
+        id="support-contact"
+        type="text"
+        formControlName="supportContact"
+        maxlength="200"
+        autocomplete="off"
+        class="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 focus:border-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-600/20"
+      >
+    </div>
+
+    <button
+      type="submit"
+      [disabled]="maintenanceForm.invalid || loading()"
+      class="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-orange-700 px-6 py-3 font-bold text-white transition-colors hover:bg-orange-800 focus:outline-none focus:ring-4 focus:ring-orange-700/30 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+    >
+      @if (loading()) {
+        <span class="material-icons-outlined animate-spin" aria-hidden="true">sync</span>
+        Enviando aviso...
+      } @else {
+        <span class="material-icons-outlined" aria-hidden="true">notifications_active</span>
+        Enviar notificación
+      }
+    </button>
+  </form>
+</section>
